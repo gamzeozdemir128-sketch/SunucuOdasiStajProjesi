@@ -38,6 +38,10 @@
     @media(max-width: 1000px) { .cards { grid-template-columns: repeat(2, 1fr); } }
     @media(max-width: 600px) { .cards { grid-template-columns: 1fr; } }
   </style>
+
+  <!-- ASLA ENGELLEMEYEN EN KARARLI ESKİ NESİL CDN KÜTÜPHANELERİ -->
+  <script src="https://gstatic.com"></script>
+  <script src="https://gstatic.com"></script>
 </head>
 <body>
   <div class="modal-backdrop" id="modalBackdrop"></div>
@@ -89,7 +93,7 @@
     <div id="sifrePencerem" class="modal">
       <h3 style="margin-top:0;">Yeni Ortak Şifre Belirleyin</h3>
       <input type="password" id="yeniSifreMetni" placeholder="Yeni 4 Haneli Şifre" maxlength="4" style="padding:11px; width:100%; margin-bottom:12px; border-radius:5px; border:1px solid #31435d; background:#101b2d; color:#fff; text-align:center;"><br>
-      <button id="btnGuncelle" style="background:#28a745; width:100%; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:5px; cursor:pointer; margin-bottom: 8px;">Şifreyi Güncelle</button>
+      <button onclick="sifreGuncelle()" style="background:#28a745; width:100%; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:5px; cursor:pointer; margin-bottom: 8px;">Şifreyi Güncelle</button>
       <button onclick="closeModal()" style="background:#dc3545; width:100%; color:#fff; padding:5px; border:none; border-radius:5px; cursor:pointer;">Kapat</button>
     </div>
 
@@ -108,24 +112,16 @@
     </div>
   </div>
 
-  <!-- SİZİN VERİTABANI YAPINIZA UYGUN MODÜLER SİSTEM -->
-  <script type="module">
-    import { initializeApp } from "https://gstatic.com";
-    import { getDatabase, ref, onValue, update } from "https://gstatic.com";
-
+  <script>
+    // Sizin Gerçek Firebase URL Bilginiz
     const firebaseConfig = {
-      databaseURL: "https://firebaseio.com"
+      databaseURL: "https://sunucuodasitakipvesogutma-default-rtdb.firebaseio.com/"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    window.openModal = () => { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; };
-    window.closeModal = () => { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; };
-    window.toggleSection = (id, arrow) => { const content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } };
-
-    // Anlık Sensör Verilerini Dinleme
-    onValue(ref(db, "/SistemVerileri"), (snapshot) => {
+    // ANLIK VERİ OKUMA VE KARŞILAMA MOTORU
+    db.ref("/SistemVerileri").on("value", (snapshot) => {
       const data = snapshot.val();
       if(data) {
         if(data.sicaklik !== undefined) {
@@ -144,12 +140,12 @@
       }
     });
 
-    // 24 Saatlik Olay Kayıtları Log Sistemi
-    onValue(ref(db, "/OlayKayitlari"), (snapshot) => {
+    // LOG SÜZME MOTORU
+    db.ref("/OlayKayitlari").orderByChild("timestamp").on("value", (snapshot) => {
       const tbody = document.getElementById("olayListesi");
       if(!tbody) return;
       tbody.innerHTML = "";
-      const birGunOnce = Date.now() - (24 * 60 * 60 * 1000);
+      const birGunOnce = Date.now() - (24 * 60 * 60 * 1000); 
       let loglar = [];
 
       snapshot.forEach((childSnapshot) => {
@@ -165,5 +161,16 @@
       });
     });
 
-    // Şifre Güncelleme Butonu (Sizin veritabanındaki "serverguard" klasörünüze göre güncellendi)
-    document.getElementById("btnGuncelle").addEventListener("click", () => {const yeniSifre = document.getElementById("yeniSifreMetni").value;if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {// Düzenleme: Doğrudan "serverguard" düğümünün altındaki aktif_sifre alanını güncellerupdate(ref(db, "serverguard"), { aktif_sifre: yeniSifre }).then(() => {alert("Şifre veritabanına başarıyla gönderildi!");window.closeModal();});} else { alert("Lütfen 4 haneli sayısal şifre girin."); }});
+    // ŞİFRE DEĞİŞTİRME MOTORU
+    function sifreGuncelle() {
+      const yeniSifre = document.getElementById("yeniSifreMetni").value;
+      if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {
+        db.ref("serverguard").update({ aktif_sifre: yeniSifre }).then(() => { 
+          alert("Şifre veritabanına başarıyla gönderildi!"); 
+          closeModal(); 
+        });
+      } else { alert("Lütfen 4 haneli sayısal şifre girin."); }
+    }
+
+    function toggleSection(id, arrow) { const content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } }
+    function openModal() { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; }function closeModal() { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; }
