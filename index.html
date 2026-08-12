@@ -108,24 +108,23 @@
     </div>
   </div>
 
-  <!-- MODERN MODÜLER FIREBASE BAĞLANTI SİSTEMİ -->
+  <!-- SİZİN VERİTABANI YAPINIZA UYGUN MODÜLER SİSTEM -->
   <script type="module">
     import { initializeApp } from "https://gstatic.com";
-    import { getDatabase, ref, onValue, update, orderByChild, query } from "https://gstatic.com";
+    import { getDatabase, ref, onValue, update } from "https://gstatic.com";
 
     const firebaseConfig = {
-      databaseURL: "https://firebaseio.com"
+      databaseURL: "https://sunucuodasitakipvesogutma-default-rtdb.firebaseio.com/"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Global fonksiyonları butonlara bağlama
     window.openModal = () => { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; };
     window.closeModal = () => { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; };
     window.toggleSection = (id, arrow) => { const content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } };
 
-    // Anlık Veri Okuma
+    // Anlık Sensör Verilerini Dinleme
     onValue(ref(db, "/SistemVerileri"), (snapshot) => {
       const data = snapshot.val();
       if(data) {
@@ -145,7 +144,7 @@
       }
     });
 
-    // Log Filtreleme
+    // 24 Saatlik Olay Kayıtları Log Sistemi
     onValue(ref(db, "/OlayKayitlari"), (snapshot) => {
       const tbody = document.getElementById("olayListesi");
       if(!tbody) return;
@@ -166,5 +165,5 @@
       });
     });
 
-    // Şifre Güncelleme Buton Olayı
-    document.getElementById("btnGuncelle").addEventListener("click", () => {const yeniSifre = document.getElementById("yeniSifreMetni").value;if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {update(ref(db, "SistemAyarlari"), { aktif_sifre: yeniSifre }).then(() => {alert("Şifre Firebase'e başarıyla gönderildi!");window.closeModal();});} else { alert("Lütfen 4 haneli sayısal şifre girin."); }});
+    // Şifre Güncelleme Butonu (Sizin veritabanındaki "serverguard" klasörünüze göre güncellendi)
+    document.getElementById("btnGuncelle").addEventListener("click", () => {const yeniSifre = document.getElementById("yeniSifreMetni").value;if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {// Düzenleme: Doğrudan "serverguard" düğümünün altındaki aktif_sifre alanını güncellerupdate(ref(db, "serverguard"), { aktif_sifre: yeniSifre }).then(() => {alert("Şifre veritabanına başarıyla gönderildi!");window.closeModal();});} else { alert("Lütfen 4 haneli sayısal şifre girin."); }});
