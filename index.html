@@ -39,8 +39,9 @@
     @media(max-width: 600px) { .cards { grid-template-columns: 1fr; } }
   </style>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <!-- ASLA ENGELLEMEYEN EN KARARLI ESKİ NESİL CDN KÜTÜPHANELERİ -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
   <div class="modal-backdrop" id="modalBackdrop"></div>
@@ -110,20 +111,22 @@
       </div>
     </div>
   </div>
-
-  <script>
-    var firebaseConfig = {
+<script>
+  
+    // Sizin Gerçek Firebase URL Bilginiz
+    const firebaseConfig = {
       databaseURL: "https://sunucuodasitakipvesogutma-default-rtdb.firebaseio.com/"
     };
     firebase.initializeApp(firebaseConfig);
-    var db = firebase.database();
+    const db = firebase.database();
 
-    db.ref("/SistemVerileri").on("value", function(snapshot) {
-      var data = snapshot.val();
+    // ANLIK VERİ OKUMA VE KARŞILAMA MOTORU
+    db.ref("/SistemVerileri").on("value", (snapshot) => {
+      const data = snapshot.val();
       if(data) {
         if(data.sicaklik !== undefined) {
           document.getElementById("val_sicaklik").innerHTML = data.sicaklik + " <span class='unit'>°C</span>";
-          var barSicaklik = document.getElementById("bar_sicaklik");
+          const barSicaklik = document.getElementById("bar_sicaklik");
           if(barSicaklik) barSicaklik.style.width = (data.sicaklik / 50 * 100) + "%";
           document.getElementById("sub_sicaklik").innerText = data.sicaklik > 32 ? "⚠️ Kritik Sıcaklık!" : "● Sıcaklık Dengeli";
           document.getElementById("val_alarm").innerHTML = data.sicaklik > 32 ? '<span class="dot critical"></span><span>Tehlike</span>' : '<span class="dot normal"></span><span>Normal</span>';
@@ -131,48 +134,44 @@
         }
         if(data.nem !== undefined) {
           document.getElementById("val_nem").innerHTML = data.nem + " <span class='unit'>% RH</span>";
-          var barNem = document.getElementById("bar_nem");
+          const barNem = document.getElementById("bar_nem");
           if(barNem) barNem.style.width = data.nem + "%";
         }
       }
     });
 
-    // MODİFİKASYON: 5 GÜNLÜK (120 SAAT) LOG MOTORU
-    db.ref("/OlayKayitlari").orderByChild("timestamp").on("value", function(snapshot) {
-      var tbody = document.getElementById("olayListesi");
+    // LOG SÜZME MOTORU
+    db.ref("/OlayKayitlari").orderByChild("timestamp").on("value", (snapshot) => {
+      const tbody = document.getElementById("olayListesi");
       if(!tbody) return;
       tbody.innerHTML = "";
-      
-      // 5 günün milisaniye cinsinden hesabı (5 gün * 24 saat * 60 dk * 60 sn * 1000 ms)
-      var besGunOnce = Date.now() - (5 * 24 * 60 * 60 * 1000); 
-      var loglar = [];
+      const birGunOnce = Date.now() - (24 * 60 * 60 * 1000); 
+      let loglar = [];
 
-      snapshot.forEach(function(childSnapshot) {
-        var log = childSnapshot.val();
-        if (log.timestamp >= besGunOnce) { 
-          loglar.unshift(log); 
-        } else {
-          childSnapshot.ref.remove(); // 5 günden eski olanları otomatik silerek DB'yi korur
-        }
+      snapshot.forEach((childSnapshot) => {
+        const log = childSnapshot.val();
+        if (log.timestamp >= birGunOnce) { loglar.unshift(log); }
       });
 
-      loglar.forEach(function(log) {
-        var row = document.createElement("tr");
-        var badgeColor = log.seviye === "Kritik" ? "background:#ff5c5c; color:#fff;" : "background:#18345d; color:#5ea0ff;";
+      loglar.forEach(log => {
+        const row = document.createElement("tr");
+        let badgeColor = log.seviye === "Kritik" ? "background:#ff5c5c; color:#fff;" : "background:#18345d; color:#5ea0ff;";
         row.innerHTML = "<td>" + log.zaman + "</td><td><span class='badge' style='" + badgeColor + "'>" + log.seviye + "</span></td><td>" + log.kaynak + "</td><td>" + log.aciklama + "</td>";
         tbody.appendChild(row);
       });
     });
 
+    // ŞİFRE DEĞİŞTİRME MOTORU
     function sifreGuncelle() {
-      var yeniSifre = document.getElementById("yeniSifreMetni").value;
+      const yeniSifre = document.getElementById("yeniSifreMetni").value;
       if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {
-        db.ref("serverguard").update({ aktif_sifre: yeniSifre }).then(function() { 
+        db.ref("serverguard").update({ aktif_sifre: yeniSifre }).then(() => { 
           alert("Şifre veritabanına başarıyla gönderildi!"); 
           closeModal(); 
         });
       } else { alert("Lütfen 4 haneli sayısal şifre girin."); }
     }
-    function toggleSection(id, arrow) { var content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } }function openModal() { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; }function closeModal() { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; }
-  </script>
 
+    function toggleSection(id, arrow) { const content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } }
+    function openModal() { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; }function closeModal() { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; }
+</script>
