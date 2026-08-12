@@ -38,17 +38,12 @@
     @media(max-width: 1000px) { .cards { grid-template-columns: repeat(2, 1fr); } }
     @media(max-width: 600px) { .cards { grid-template-columns: 1fr; } }
   </style>
-
-  <!-- Firebase Bağlantı Kütüphaneleri -->
-  <script src="https://gstatic.com"></script>
-  <script src="https://gstatic.com"></script>
 </head>
 <body>
   <div class="modal-backdrop" id="modalBackdrop"></div>
   <div class="page">
     <h1 style="text-align: center; color: #f2f7fc; font-size: 26px; margin: 5px 0 25px 0;">Sunucu Odası Nem ve Sıcaklık Takip Sistemi</h1>
 
-    <!-- CANLI KART TASARIMLARINIZ -->
     <div class="cards">
       <div class="card">
         <div class="icon blue">♨</div>
@@ -87,7 +82,6 @@
       </div>
     </div>
 
-    <!-- ŞİFRE DEĞİŞTİRME BUTONU -->
     <div style="margin-top:20px; text-align:center; margin-bottom: 25px;">
       <button onclick="openModal()" style="background:#ffc107; color:#333; padding:12px; font-weight:bold; cursor:pointer; border:none; border-radius:6px; width:280px;">Şifre Değiştirmek İçin Tıklayın</button>
     </div>
@@ -95,11 +89,10 @@
     <div id="sifrePencerem" class="modal">
       <h3 style="margin-top:0;">Yeni Ortak Şifre Belirleyin</h3>
       <input type="password" id="yeniSifreMetni" placeholder="Yeni 4 Haneli Şifre" maxlength="4" style="padding:11px; width:100%; margin-bottom:12px; border-radius:5px; border:1px solid #31435d; background:#101b2d; color:#fff; text-align:center;"><br>
-      <button onclick="sifreGuncelle()" style="background:#28a745; width:100%; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:5px; cursor:pointer; margin-bottom: 8px;">Şifreyi Güncelle</button>
+      <button id="btnGuncelle" style="background:#28a745; width:100%; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:5px; cursor:pointer; margin-bottom: 8px;">Şifreyi Güncelle</button>
       <button onclick="closeModal()" style="background:#dc3545; width:100%; color:#fff; padding:5px; border:none; border-radius:5px; cursor:pointer;">Kapat</button>
     </div>
 
-    <!-- TABLO ALANI -->
     <div class="section">
       <div class="section-title" onclick="toggleSection('olayBolumu',this.querySelector('.arrow'))">
         <span>⚙ &nbsp; Olay Kayıtları</span><span class="arrow">▼</span>
@@ -115,31 +108,34 @@
     </div>
   </div>
 
-  <!-- FIREBASE JAVASCRIPT BAĞLANTI MOTORU -->
-  <script>
-    const firebaseConfig = {
-      databaseURL: "https://sunucuodasitakipvesogutma-default-rtdb.firebaseio.com/"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  <!-- MODERN MODÜLER FIREBASE BAĞLANTI SİSTEMİ -->
+  <script type="module">
+    import { initializeApp } from "https://gstatic.com";
+    import { getDatabase, ref, onValue, update, orderByChild, query } from "https://gstatic.com";
 
-    // Veri dinleme
-    db.ref("/SistemVerileri").on("value", (snapshot) => {
+    const firebaseConfig = {
+      databaseURL: "https://firebaseio.com"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Global fonksiyonları butonlara bağlama
+    window.openModal = () => { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; };
+    window.closeModal = () => { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; };
+    window.toggleSection = (id, arrow) => { const content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } };
+
+    // Anlık Veri Okuma
+    onValue(ref(db, "/SistemVerileri"), (snapshot) => {
       const data = snapshot.val();
       if(data) {
         if(data.sicaklik !== undefined) {
           document.getElementById("val_sicaklik").innerHTML = data.sicaklik + " <span class='unit'>°C</span>";
           const barSicaklik = document.getElementById("bar_sicaklik");
           if(barSicaklik) barSicaklik.style.width = (data.sicaklik / 50 * 100) + "%";
-          
-          const subSicaklik = document.getElementById("sub_sicaklik");
-          if(subSicaklik) subSicaklik.innerText = data.sicaklik > 32 ? "⚠️ Kritik Sıcaklık!" : "● Sıcaklık Dengeli";
-          
-          const valAlarm = document.getElementById("val_alarm");
-          if(valAlarm) valAlarm.innerHTML = data.sicaklik > 32 ? '<span class="dot critical"></span><span>Tehlike</span>' : '<span class="dot normal"></span><span>Normal</span>';
-          
-          const valFan = document.getElementById("val_fan");
-          if(valFan) valFan.innerHTML = data.sicaklik > 28 ? '<span class="dot normal"></span><span>Aktif (Fan Açık)</span>' : '<span class="dot critical"></span><span>Kapalı</span>';
+          document.getElementById("sub_sicaklik").innerText = data.sicaklik > 32 ? "⚠️ Kritik Sıcaklık!" : "● Sıcaklık Dengeli";
+          document.getElementById("val_alarm").innerHTML = data.sicaklik > 32 ? '<span class="dot critical"></span><span>Tehlike</span>' : '<span class="dot normal"></span><span>Normal</span>';
+          document.getElementById("val_fan").innerHTML = data.sicaklik > 28 ? '<span class="dot normal"></span><span>Aktif (Fan Açık)</span>' : '<span class="dot critical"></span><span>Kapalı</span>';
         }
         if(data.nem !== undefined) {
           document.getElementById("val_nem").innerHTML = data.nem + " <span class='unit'>% RH</span>";
@@ -149,21 +145,17 @@
       }
     });
 
-    // 24 saatlik log motoru
-    db.ref("/OlayKayitlari").orderByChild("timestamp").on("value", (snapshot) => {
+    // Log Filtreleme
+    onValue(ref(db, "/OlayKayitlari"), (snapshot) => {
       const tbody = document.getElementById("olayListesi");
       if(!tbody) return;
       tbody.innerHTML = "";
-      const birGunOnce = Date.now() - (24 * 60 * 60 * 1000); 
+      const birGunOnce = Date.now() - (24 * 60 * 60 * 1000);
       let loglar = [];
 
       snapshot.forEach((childSnapshot) => {
         const log = childSnapshot.val();
-        if (log.timestamp >= birGunOnce) {
-          loglar.unshift(log); 
-        } else {
-          childSnapshot.ref.remove(); 
-        }
+        if (log.timestamp >= birGunOnce) { loglar.unshift(log); }
       });
 
       loglar.forEach(log => {
@@ -174,10 +166,5 @@
       });
     });
 
-    // Şifre gönderme motoru
-    function sifreGuncelle() {
-      const yeniSifre = document.getElementById("yeniSifreMetni").value;
-      if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {
-        db.ref("SistemAyarlari").update({ aktif_sifre: yeniSifre }).then(() => { 
-          alert("Şifre Firebase'e başarıyla gönderildi!"); 
-    closeModal();});} else {alert("Lütfen 4 haneli sayısal şifre girin.");}}function toggleSection(id, arrow) { const content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } }function openModal() { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; }function closeModal() { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; }
+    // Şifre Güncelleme Buton Olayı
+    document.getElementById("btnGuncelle").addEventListener("click", () => {const yeniSifre = document.getElementById("yeniSifreMetni").value;if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {update(ref(db, "SistemAyarlari"), { aktif_sifre: yeniSifre }).then(() => {alert("Şifre Firebase'e başarıyla gönderildi!");window.closeModal();});} else { alert("Lütfen 4 haneli sayısal şifre girin."); }});
