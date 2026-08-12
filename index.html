@@ -1,177 +1,653 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ServerGuard Akıllı İstasyon Kontrol Paneli</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; background: #0b1422; color: #dce7f5; font-family: 'Segoe UI', Arial, sans-serif; }
-    .page { padding: 22px; max-width: 1500px; margin: auto; }
-    .cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 24px; }
-    .card { background: #1b293d; border: 1px solid #31435d; border-radius: 12px; padding: 20px; min-height: 205px; box-shadow: 0 8px 20px rgba(0,0,0,.20); }
-    .card-name { color: #9fb0c8; font-size: 14px; margin-bottom: 8px; }
-    .card-value { font-size: 34px; font-weight: 700; color: #f2f7fc; }
-    .unit { font-size: 15px; color: #b7c4d5; font-weight: 400; }
-    .sub { font-size: 12px; margin-top: 8px; color: #21d89b; }
-    .line { height: 5px; background: #0e1726; border-radius: 5px; margin-top: 18px; overflow: hidden; }
-    .line span { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #2f80ed, #e74c3c); border-radius: 5px; transition: width 0.5s ease; }
-    .icon { width: 42px; height: 42px; border-radius: 9px; background: #243754; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 15px; }
-    .blue { color: #3b8cff; } .cyan { color: #00c8e8; } .green { color: #19d59b; } .purple { color: #8a7cff; }
-    .status { display: flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; margin-top: 10px; }
-    .dot { width: 17px; height: 17px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-    .normal { background: #63e6a8; box-shadow: 0 0 10px #63e6a8; }
-    .critical { background: #ff5c5c; box-shadow: 0 0 10px #ff5c5c; }
-    .section { background: #1b293d; border: 1px solid #31435d; border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
-    .section-title { padding: 19px 22px; cursor: pointer; font-size: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; background: #1d2b40; }
-    .section-title:hover { background: #22334b; }
-    .arrow { font-size: 20px; color: #6f829d; transition: .2s; }
-    .arrow.open { transform: rotate(180deg); }
-    .section-content { display: none; padding: 20px; border-top: 1px solid #304158; }
-    .section-content.open { display: block; }
-    .table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .table th { text-align: left; background: #0e1728; color: #8fa3bd; padding: 13px; }
-    .table td { padding: 13px; border-bottom: 1px solid #304158; color: #d5dfeb; }
-    .badge { padding: 4px 9px; border-radius: 4px; background: #18345d; color: #5ea0ff; font-size: 11px; font-weight: bold; }
-    .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1b293d; padding: 25px; border-radius: 12px; width: 320px; border: 1px solid #31435d; z-index: 1000; text-align: center; }
-    .modal-backdrop { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 999; }
-    @media(max-width: 1000px) { .cards { grid-template-columns: repeat(2, 1fr); } }
-    @media(max-width: 600px) { .cards { grid-template-columns: 1fr; } }
-  </style>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>ESP8266 Akıllı İstasyon Kontrol Paneli</title>
+<style>
+*{box-sizing:border-box;}
+body{margin:0;background:#0b1422;color:#dce7f5;font-family:'Segoe UI',Arial,sans-serif;}
+.page{padding:22px;max-width:1500px;margin:auto;}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:20px;margin-bottom:24px;}
+.card{background:#1b293d;border:1px solid #31435d;border-radius:12px;padding:20px;min-height:205px;box-shadow:0 8px 20px rgba(0,0,0,.20);}
+.card-title{color:#6f829d;font-size:13px;text-align:right;margin-bottom:22px;}
+.card-name{color:#9fb0c8;font-size:14px;margin-bottom:8px;}
+.card-value{font-size:34px;font-weight:700;color:#f2f7fc;}
+.unit{font-size:15px;color:#b7c4d5;font-weight:400;}
+.sub{font-size:12px;margin-top:8px;color:#21d89b;}
+.line{height:5px;background:#0e1726;border-radius:5px;margin-top:18px;overflow:hidden;}
+.line span{display:block;height:100%;width:55%;background:linear-gradient(90deg,#2f80ed,#e74c3c);border-radius:5px;}
+.icon{width:42px;height:42px;border-radius:9px;background:#243754;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:15px;}
+.blue{color:#3b8cff;}
+.cyan{color:#00c8e8;}
+.green{color:#19d59b;}
+.purple{color:#8a7cff;}
+.status{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:700;}
+.dot{width:17px;height:17px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.normal{background:#63e6a8;box-shadow:0 0 10px #63e6a8;}
+.warning{background:#f4d35e;box-shadow:0 0 10px #f4d35e;}
+.critical{background:#ff5c5c;box-shadow:0 0 10px #ff5c5c;}
+.section{background:#1b293d;border:1px solid #31435d;border-radius:12px;margin-bottom:14px;overflow:hidden;}
+.section-title{padding:19px 22px;cursor:pointer;font-size:16px;font-weight:700;display:flex;justify-content:space-between;align-items:center;background:#1d2b40;}
+.section-title:hover{background:#22334b;}
+.arrow{font-size:20px;color:#6f829d;transition:.2s;}
+.arrow.open{transform:rotate(180deg);}
+.section-content{display:none;padding:20px;border-top:1px solid #304158;}
+.section-content.open{display:block;}
+.chart-box{background:#1b293d;border:1px solid #31435d;border-radius:10px;padding:18px;}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;}
+.chart-title{font-size:15px;font-weight:700;}
+.live{font-size:11px;color:#71849d;background:#101b2d;border:1px solid #293a52;padding:5px 9px;border-radius:4px;}
+canvas{width:100%;height:320px;background:#172438;border-radius:8px;display:block;}
+.table{width:100%;border-collapse:collapse;font-size:13px;}
+.table th{text-align:left;background:#0e1728;color:#8fa3bd;padding:13px;}
+.table td{padding:13px;border-bottom:1px solid #304158;color:#d5dfeb;}
+.table tr.log-row{cursor:pointer;transition:.2s;}
+.table tr.log-row:hover{background:#22334b;}
+.badge{padding:4px 9px;border-radius:4px;background:#18345d;color:#5ea0ff;font-size:11px;}
+.log-detail{display:none;background:#101b2d;border-left:3px solid #ff5c5c;padding:15px 18px;color:#b9c8da;font-size:12px;line-height:1.8;}
+.log-detail.open{display:block;}
+.log-detail strong{color:#e5edf7;}
+.log-arrow{color:#71849d;font-size:15px;transition:.2s;}
+.log-arrow.open{transform:rotate(180deg);}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;}
+.info-row{display:flex;justify-content:space-between;padding:15px 0;border-bottom:1px solid #304158;gap:20px;}
+.info-label{color:#8397b2;}
+.info-value{font-weight:600;color:#e5edf7;text-align:right;}
+@media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){
+.page{padding:10px;}
+.cards{grid-template-columns:1fr;}
+.info-grid{grid-template-columns:1fr;}
+.card{min-height:180px;}
+.status{font-size:15px;}
+}
 
-  <!-- ASLA ENGELLEMEYEN EN KARARLI ESKİ NESİL CDN KÜTÜPHANELERİ -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-</head>
-<body>
-  <div class="modal-backdrop" id="modalBackdrop"></div>
-  <div class="page">
-    <h1 style="text-align: center; color: #f2f7fc; font-size: 26px; margin: 5px 0 25px 0;">Sunucu Odası Nem ve Sıcaklık Takip Sistemi</h1>
-
-    <div class="cards">
-      <div class="card">
-        <div class="icon blue">♨</div>
-        <div class="card-name">Anlık Sıcaklık</div>
-        <div class="card-value" id="val_sicaklik">-- <span class="unit">°C</span></div>
-        <div class="sub" id="sub_sicaklik">● Bağlanıyor...</div>
-        <div class="line"><span id="bar_sicaklik"></span></div>
-      </div>
-
-      <div class="card">
-        <div class="icon cyan">♨</div>
-        <div class="card-name">Anlık Nem</div>
-        <div class="card-value" id="val_nem">-- <span class="unit">% RH</span></div>
-        <div class="sub" id="sub_nem">İdeal Nem (%40 - %55)</div>
-        <div class="line"><span id="bar_nem" style="background: #00c8e8;"></span></div>
-      </div>
-
-      <div class="card">
-        <div class="icon green">♧</div>
-        <div class="card-name">Alarm Durumu</div>
-        <div class="status" id="val_alarm">--</div>
-      </div>
-
-      <div class="card">
-        <div class="icon">⚡</div>
-        <div class="card-name">Havalandırma</div>
-        <div class="status" id="val_fan">--</div>
-      </div>
-
-      <div class="card">
-        <div class="icon purple">⌁</div>
-        <div class="card-name">Wi-Fi Bağlantısı</div>
-        <div class="card-value">100 <span class="unit">%</span></div>
-        <div class="sub">Bulut Bağlantısı Aktif</div>
-        <div style="font-size: 11px; color: #71849d; margin-top: 18px;">Haberleşme: Firebase REST</div>
-      </div>
-    </div>
-
-    <div style="margin-top:20px; text-align:center; margin-bottom: 25px;">
-      <button onclick="openModal()" style="background:#ffc107; color:#333; padding:12px; font-weight:bold; cursor:pointer; border:none; border-radius:6px; width:280px;">Şifre Değiştirmek İçin Tıklayın</button>
-    </div>
-    
-    <div id="sifrePencerem" class="modal">
-      <h3 style="margin-top:0;">Yeni Ortak Şifre Belirleyin</h3>
-      <input type="password" id="yeniSifreMetni" placeholder="Yeni 4 Haneli Şifre" maxlength="4" style="padding:11px; width:100%; margin-bottom:12px; border-radius:5px; border:1px solid #31435d; background:#101b2d; color:#fff; text-align:center;"><br>
-      <button onclick="sifreGuncelle()" style="background:#28a745; width:100%; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:5px; cursor:pointer; margin-bottom: 8px;">Şifreyi Güncelle</button>
-      <button onclick="closeModal()" style="background:#dc3545; width:100%; color:#fff; padding:5px; border:none; border-radius:5px; cursor:pointer;">Kapat</button>
-    </div>
-
-    <div class="section">
-      <div class="section-title" onclick="toggleSection('olayBolumu',this.querySelector('.arrow'))">
-        <span>⚙ &nbsp; Olay Kayıtları</span><span class="arrow">▼</span>
-      </div>
-      <div id="olayBolumu" class="section-content">
-        <table class="table">
-          <thead>
-            <tr><th>Zaman</th><th>Seviye</th><th>Kaynak</th><th>Açıklama</th></tr>
-          </thead>
-          <tbody id="olayListesi"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+.modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1b293d;padding:25px;border-radius:12px;width:320px;border:1px solid #31435d;z-index:1000;text-align:center;}
+.modal-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:999;}
+</style>
 <script>
-  
-    // Sizin Gerçek Firebase URL Bilginiz
-    const firebaseConfig = {
-      databaseURL: "https://sunucuodasitakipvesogutma-default-rtdb.firebaseio.com/"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+let sicaklikData=JSON.parse(localStorage.getItem('sicaklikData')||'[]');
+let nemData=JSON.parse(localStorage.getItem('nemData')||'[]');
+function grafikVerisiEkle(){
+let simdi=Date.now();
+sicaklikData.push({v:" + String(sonSicaklik) + ",t:simdi});
+nemData.push({v:" + String(sonNem) + ",t:simdi});
+if(sicaklikData.length>60)sicaklikData.shift();
+if(nemData.length>60)nemData.shift();
+localStorage.setItem('sicaklikData',JSON.stringify(sicaklikData));
+localStorage.setItem('nemData',JSON.stringify(nemData));
+}
+let olaylar=JSON.parse(localStorage.getItem('olaylar')||'[]');
+function olayEkle(seviye,kaynak,mesaj,detay){
+let simdi=Date.now();
+let eski=olaylar.length>0?olaylar[0]:null;
+if(eski && eski.mesaj===mesaj && (simdi-eski.t)<30000)return;
+olaylar.unshift({t:simdi,seviye:seviye,kaynak:kaynak,mesaj:mesaj,detay:detay});
+let otuzGun=30*24*60*60*1000;
+olaylar=olaylar.filter(function(o){return simdi-o.t<=otuzGun;});
+localStorage.setItem('olaylar',JSON.stringify(olaylar));
+}
+let baglantiDurumu=localStorage.getItem('baglantiDurumu')||'BAGLI';
+function baglantiKontrol(){
+fetch(window.location.href+'?kontrol=1',{cache:'no-store'})
+.then(function(){
+if(baglantiDurumu==='KESIK'){
+olayEkle('ERROR','Bağlantı','Bağlantı tekrar sağlandı','ESP8266 ile web arayüzü arasındaki bağlantı yeniden kuruldu.');
+}
+baglantiDurumu='BAGLI';
+localStorage.setItem('baglantiDurumu','BAGLI');
+})
+.catch(function(){
+if(baglantiDurumu!=='KESIK'){
+olayEkle('ERROR','Bağlantı','Bağlantı koptu','ESP8266 web sunucusuna ulaşılamıyor. Wi-Fi bağlantısı veya cihaz bağlantısı kesilmiş olabilir.');
+}
+baglantiDurumu='KESIK';
+localStorage.setItem('baglantiDurumu','KESIK');
+});
+}
+function toggleSection(id,arrow){
+let x=document.getElementById(id);
+x.classList.toggle('open');
+arrow.classList.toggle('open');
+if(x.classList.contains('open')){
+localStorage.setItem(id,'open');
+}else{
+localStorage.setItem(id,'closed');
+}
+}
+function ciz(canvasId,data,min,max,unit){
+let c=document.getElementById(canvasId);
+if(!c)return;
+let ctx=c.getContext('2d');
+let w=c.clientWidth;
+let h=c.clientHeight;
+if(w<20)w=700;
+if(h<20)h=320;
+c.width=w*2;
+c.height=h*2;
+ctx.scale(2,2);
+ctx.fillStyle='#172438';
+ctx.fillRect(0,0,w,h);
+let left=55;
+let right=20;
+let top=25;
+let bottom=55;
+let gw=w-left-right;
+let gh=h-top-bottom;
+ctx.lineWidth=1;
+ctx.strokeStyle='#2a3b52';
+for(let i=0;i<=6;i++){
+let y=top+(gh/6)*i;
+ctx.beginPath();
+ctx.moveTo(left,y);
+ctx.lineTo(w-right,y);
+ctx.stroke();
+}
+for(let i=0;i<=6;i++){
+let x=left+(gw/6)*i;
+ctx.beginPath();
+ctx.moveTo(x,top);
+ctx.lineTo(x,h-bottom);
+ctx.stroke();
+}
+ctx.fillStyle='#7f91a8';
+ctx.font='11px Arial';
+ctx.textAlign='right';
+for(let i=0;i<=6;i++){
+let value=max-((max-min)/6)*i;
+let y=top+(gh/6)*i+4;
+ctx.fillText(value.toFixed(0)+' '+unit,left-10,y);
+}
+ctx.textAlign='center';
+ctx.fillStyle='#71849d';
+ctx.font='10px Arial';
+if(data.length>0){
+let adet=Math.min(7,data.length);
+for(let i=0;i<adet;i++){
+let index=Math.floor((data.length-1)*i/(adet-1||1));
+let x=left+(index/Math.max(data.length-1,1))*gw;
+let tarih=new Date(data[index].t);
+let saat=String(tarih.getHours()).padStart(2,'0');
+let dakika=String(tarih.getMinutes()).padStart(2,'0');
+let saniye=String(tarih.getSeconds()).padStart(2,'0');
+ctx.fillText(saat+':'+dakika+':'+saniye,x,h-25);
+}
+}
+if(data.length>0){
+let noktalar=[];
+for(let i=0;i<data.length;i++){
+let x=left+(i/Math.max(data.length-1,1))*gw;
+let y=top+(max-data[i].v)/(max-min)*gh;
+if(y<top)y=top;
+if(y>top+gh)y=top+gh;
+noktalar.push({x:x,y:y});
+}
+ctx.beginPath();
+ctx.moveTo(noktalar[0].x,top+gh);
+ctx.lineTo(noktalar[0].x,noktalar[0].y);
+for(let i=1;i<noktalar.length;i++){
+ctx.lineTo(noktalar[i].x,noktalar[i].y);
+}
+ctx.lineTo(noktalar[noktalar.length-1].x,top+gh);
+ctx.closePath();
+let gradient=ctx.createLinearGradient(0,top,0,top+gh);
+if(canvasId=='sicaklikGrafik'){
+gradient.addColorStop(0,'rgba(52,127,245,0.30)');
+gradient.addColorStop(1,'rgba(52,127,245,0.02)');
+}else{
+gradient.addColorStop(0,'rgba(0,197,223,0.30)');
+gradient.addColorStop(1,'rgba(0,197,223,0.02)');
+}
+ctx.fillStyle=gradient;
+ctx.fill();
+ctx.beginPath();
+ctx.moveTo(noktalar[0].x,noktalar[0].y);
+for(let i=1;i<noktalar.length;i++){
+let onceki=noktalar[i-1];
+let simdiki=noktalar[i];
+let kontrolX=(onceki.x+simdiki.x)/2;
+ctx.quadraticCurveTo(onceki.x,onceki.y,kontrolX,(onceki.y+simdiki.y)/2);
+ctx.quadraticCurveTo(simdiki.x,simdiki.y,simdiki.x,simdiki.y);
+}
+ctx.strokeStyle=canvasId=='sicaklikGrafik'?'#347ff5':'#00c5df';
+ctx.lineWidth=2.5;
+ctx.lineJoin='round';
+ctx.lineCap='round';
+ctx.stroke();
+for(let i=0;i<noktalar.length;i++){
+ctx.beginPath();
+ctx.arc(noktalar[i].x,noktalar[i].y,3,0,Math.PI*2);
+ctx.fillStyle=canvasId=='sicaklikGrafik'?'#347ff5':'#00c5df';
+ctx.fill();
+}
+let son=data[data.length-1];
+ctx.fillStyle='#edf4fc';
+ctx.font='bold 14px Arial';
+ctx.textAlign='right';
+ctx.fillText(son.v.toFixed(1)+' '+unit,w-right,top+5);
+}
+}
+function olaylariGoster(){
+let tablo=document.getElementById('olayListesi');
+if(!tablo)return;
+tablo.innerHTML='';
+let simdi=Date.now();
+let otuzGun=30*24*60*60*1000;
+olaylar=olaylar.filter(function(o){return simdi-o.t<=otuzGun;});
+localStorage.setItem('olaylar',JSON.stringify(olaylar));
+if(olaylar.length===0){
+let bos=document.createElement('tr');
+bos.innerHTML='<td colspan="5" style="text-align:center;color:#71849d;padding:25px;">Henüz olay kaydı bulunmuyor.</td>';
+tablo.appendChild(bos);
+return;
+}
+olaylar.forEach(function(o,index){
+let tr=document.createElement('tr');
+tr.className='log-row';
+let tarih=new Date(o.t);
+let zaman=tarih.toLocaleDateString('tr-TR')+' '+tarih.toLocaleTimeString('tr-TR');
+let kirmizi=(o.seviye==='CRITICAL'||o.seviye==='HIGH'||o.seviye==='ERROR');
+let seviyeRenk='';
+if(kirmizi){
+seviyeRenk='background:#5a2020;color:#ff7373;';
+}else if(o.seviye==='WARNING'){
+seviyeRenk='background:#5a4b18;color:#f1c40f;';
+}
+tr.innerHTML='<td>'+zaman+'</td>'
++'<td><span class="badge" style="'+seviyeRenk+'">'+o.seviye+'</span></td>'
++'<td><b>'+o.kaynak+'</b></td>'
++'<td>'+o.mesaj+'</td>'
++'<td>'+(kirmizi?'<span class="log-arrow">▼</span>':'')+'</td>';
+tablo.appendChild(tr);
+if(kirmizi){
+let detay=document.createElement('tr');
+detay.innerHTML='<td colspan="5">'
++'<div id="logdetay'+index+'" class="log-detail">'
++'<strong>Tarih:</strong> '+zaman+'<br>'
++'<strong>Seviye:</strong> '+o.seviye+'<br>'
++'<strong>Kaynak:</strong> '+o.kaynak+'<br>'
++'<strong>Olay:</strong> '+o.mesaj+'<br>'
++'<strong>Sebep:</strong> '+(o.detay||'Olayın ayrıntılı sebebi bulunamadı.')
++'</div></td>';
+tablo.appendChild(detay);
+tr.onclick=function(){
+let d=document.getElementById('logdetay'+index);
+d.classList.toggle('open');
+let ok=tr.querySelector('.log-arrow');
+if(ok)ok.classList.toggle('open');
+};
+}
+});
+}
+function baslat(){
+grafikVerisiEkle();
+if(" + String(sonSicaklik) + ">=36){
+olayEkle('CRITICAL','Alarm','Kritik alarm aktif','Sıcaklık 36°C veya üzerine çıktı. Bu nedenle kritik alarm devreye girdi.');
+}else if(" + String(sonSicaklik) + ">=31){
+olayEkle('HIGH','Havalandırma','Yüksek sıcaklık','Sıcaklık 31°C ile 36°C arasında olduğu için havalandırma aktif edildi.');
+}else if(" + String(sonSicaklik) + ">=27){
+olayEkle('WARNING','Sıcaklık','Uyarı','Sıcaklık 27°C ile 31°C arasında.');
+}else if(" + String(sonSicaklik) + ">=15){
+olayEkle('INFO','Sıcaklık','Normal sıcaklık','Sıcaklık normal aralıkta.');
+}else{
+olayEkle('INFO','Sıcaklık','Düşük sıcaklık','Sıcaklık 15°C altında.');
+}
+olaylariGoster();
+ciz('sicaklikGrafik',sicaklikData,10,45,'°C');
+ciz('nemGrafik',nemData,20,80,'% RH');
+baglantiKontrol();
+let bolumler=['sicaklikBolumu','nemBolumu','olayBolumu','sistemBolumu'];
+bolumler.forEach(function(id){
+let durum=localStorage.getItem(id);
+let x=document.getElementById(id);
+if(durum==='open'){
+x.classList.add('open');
+let baslik=x.previousElementSibling;
+let ok=baslik.querySelector('.arrow');
+if(ok){ok.classList.add('open');}
+}
+});
+}
+window.addEventListener('load',baslat);
+setInterval(baglantiKontrol,5000);
+setTimeout(function(){window.location.reload();},3000);
+</script>
 
-    // ANLIK VERİ OKUMA VE KARŞILAMA MOTORU
-    db.ref("/SistemVerileri").on("value", (snapshot) => {
-      const data = snapshot.val();
-      if(data) {
-        if(data.sicaklik !== undefined) {
-          document.getElementById("val_sicaklik").innerHTML = data.sicaklik + " <span class='unit'>°C</span>";
-          const barSicaklik = document.getElementById("bar_sicaklik");
-          if(barSicaklik) barSicaklik.style.width = (data.sicaklik / 50 * 100) + "%";
-          document.getElementById("sub_sicaklik").innerText = data.sicaklik > 32 ? "⚠️ Kritik Sıcaklık!" : "● Sıcaklık Dengeli";
-          document.getElementById("val_alarm").innerHTML = data.sicaklik > 32 ? '<span class="dot critical"></span><span>Tehlike</span>' : '<span class="dot normal"></span><span>Normal</span>';
-          document.getElementById("val_fan").innerHTML = data.sicaklik > 28 ? '<span class="dot normal"></span><span>Aktif (Fan Açık)</span>' : '<span class="dot critical"></span><span>Kapalı</span>';
-        }
-        if(data.nem !== undefined) {
-          document.getElementById("val_nem").innerHTML = data.nem + " <span class='unit'>% RH</span>";
-          const barNem = document.getElementById("bar_nem");
-          if(barNem) barNem.style.width = data.nem + "%";
-        }
-      }
-    });
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head><body>
+<div class='page'>
+<h1 style='text-align:center;color:#f2f7fc;font-size:26px;margin:5px 0 25px 0;'>Sunucu Odasi Nem ve Sicaklik Takip Sistemi</h1>
+<div class='cards'>
+<div class='card'>
+<div class='icon blue'>♨</div>
+<div class='card-name'>Anlık Sıcaklık</div>
+<div class='card-value' id='val_sicaklik'>-- <span class='unit'>°C</span></div>
+<div class='sub' id='sub_sicaklik'>● Bağlanıyor...</div>
+<div class='line'><span id='bar_sicaklik'></span></div>
+</div>
+<div class='card'>
+<div class='icon cyan'>♨</div>
+<div class='card-name'>Anlık Nem</div>
+<div class='card-value' id='val_nem'>-- <span class='unit'>% RH</span></div>
+<div class='sub' id='sub_nem'>İdeal Nem (%40 - %55)</div>
+<div class='line'><span id='bar_nem' style='width:0%;background:#00c5df;'></span></div>
+</div>
+<div class='card'>
+<div class='icon green'>♧</div>
+<div class='card-name'>Alarm Durumu</div>
+<div class='status' id='val_alarm'>
+<span class='dot normal'></span>
+<span>Bağlanıyor...</span>
+</div>
+</div>
+<div class='card'>
+<div class='icon'>⚡</div>
+<div class='card-name'>Havalandırma</div>
+<div class='status' id='val_fan'>
+<span class='dot' style='background:#e8ddff;'></span>
+<span>Bağlanıyor...</span>
+</div>
+</div>
+<div class='card'>
+<div class='icon purple'>⌁</div>
+<div class='card-name'>Wi-Fi Bağlantısı</div>
+<div class='card-value'>
+86
+ <span class='unit'>%</span>
+</div>
+<div class='sub'>Güçlü Sinyal (
+ dBm)</div>
+<div style='font-size:11px;color:#71849d;margin-top:18px;'>SSID: 
+</div>
+</div>
+</div>
+<div class='section'>
+<div class='section-title' onclick="toggleSection('sicaklikBolumu',this.querySelector('.arrow'))">
+<span>⌁ &nbsp; Sıcaklık Grafiği (°C)</span>
+<span class='arrow'>▼</span>
+</div>
+<div id='sicaklikBolumu' class='section-content'>
+<div class='chart-box'>
+<div class='chart-header'>
+<div class='chart-title'>Sıcaklık (°C)</div>
+<div class='live'>CANLI TELEMETRİ</div>
+</div>
+<canvas id='sicaklikGrafik'></canvas>
+</div>
+</div>
+</div>
+<div class='section'>
+<div class='section-title' onclick="toggleSection('nemBolumu',this.querySelector('.arrow'))">
+<span>∿ &nbsp; Nem Grafiği (% RH)</span>
+<span class='arrow'>▼</span>
+</div>
+<div id='nemBolumu' class='section-content'>
+<div class='chart-box'>
+<div class='chart-header'>
+<div class='chart-title'>Nem (% RH)</div>
+<div class='live'>CANLI TELEMETRİ</div>
+</div>
+<canvas id='nemGrafik'></canvas>
+</div>
+</div>
+</div>
+<div class='section'>
+<div class='section-title' onclick="toggleSection('olayBolumu',this.querySelector('.arrow'))">
+<span>◴ &nbsp; Olay Kayıtları</span>
+<span class='arrow'>▼</span>
+</div>
+<div id='olayBolumu' class='section-content'>
+<table class='table'>
+<thead>
+<tr>
+<th>Zaman</th>
+<th>Seviye</th>
+<th>Kaynak</th>
+<th>Açıklama / Olay</th>
+<th></th>
+</tr>
+</thead>
+<tbody id='olayListesi'></tbody>
+</table>
+</div>
+</div>
+<div class='section'>
+<div class='section-title' onclick="toggleSection('sistemBolumu',this.querySelector('.arrow'))">
+<span>ⓘ &nbsp; Sistem Bilgileri</span>
+<span class='arrow'>▼</span>
+</div>
+<div id='sistemBolumu' class='section-content'>
+<div class='info-grid'>
+<div class='info-row'>
+<span class='info-label'>▣ &nbsp; Cihaz Adı:</span>
+<span class='info-value'>ESP8266-ServerNode-01</span>
+</div>
+<div class='info-row'>
+<span class='info-label'>⌘ &nbsp; IP Adresi:</span>
+<span class='info-value'>
+</span>
+</div>
+<div class='info-row'>
+<span class='info-label'>◷ &nbsp; Son Güncelleme:</span>
+<span class='info-value'>
+ sn</span>
+</div>
+<div class='info-row'>
+<span class='info-label'>&lt;/&gt; &nbsp; Yazılım Versiyonu:</span>
+<span class='info-value' style='color:#20d49a;'>v2.4.1-Enterprise</span>
+</div>
+<div class='info-row'>
+<span class='info-label'>◉ &nbsp; Haberleşme Protokolü:</span>
+<span class='info-value'>HTTP / JSON</span>
+</div>
+<div class='info-row'>
+<span class='info-label'>◴ &nbsp; Sistem Çalışma Süresi:</span>
+<span class='info-value'>
+ sn</span>
+</div>
+</div>
+</div>
+</div>
+</div>
 
-    // LOG SÜZME MOTORU
-    db.ref("/OlayKayitlari").orderByChild("timestamp").on("value", (snapshot) => {
-      const tbody = document.getElementById("olayListesi");
-      if(!tbody) return;
-      tbody.innerHTML = "";
-      const birGunOnce = Date.now() - (24 * 60 * 60 * 1000); 
-      let loglar = [];
+<script>
+const firebaseConfig = {
+  databaseURL: "https://sunucuodasitakipvesogutma-default-rtdb.firebaseio.com/"
+};
 
-      snapshot.forEach((childSnapshot) => {
-        const log = childSnapshot.val();
-        if (log.timestamp >= birGunOnce) { loglar.unshift(log); }
-      });
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-      loglar.forEach(log => {
-        const row = document.createElement("tr");
-        let badgeColor = log.seviye === "Kritik" ? "background:#ff5c5c; color:#fff;" : "background:#18345d; color:#5ea0ff;";
-        row.innerHTML = "<td>" + log.zaman + "</td><td><span class='badge' style='" + badgeColor + "'>" + log.seviye + "</span></td><td>" + log.kaynak + "</td><td>" + log.aciklama + "</td>";
-        tbody.appendChild(row);
-      });
-    });
+let baslangicZamani = Date.now();
+let sonSicaklik = 0;
+let sonNem = 0;
 
-    // ŞİFRE DEĞİŞTİRME MOTORU
-    function sifreGuncelle() {
-      const yeniSifre = document.getElementById("yeniSifreMetni").value;
-      if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {
-        db.ref("serverguard").update({ aktif_sifre: yeniSifre }).then(() => { 
-          alert("Şifre veritabanına başarıyla gönderildi!"); 
-          closeModal(); 
-        });
-      } else { alert("Lütfen 4 haneli sayısal şifre girin."); }
+function firebaseVerileriniUygula(data) {
+  if (!data) return;
+
+  if (data.sicaklik !== undefined) {
+    sonSicaklik = Number(data.sicaklik);
+
+    const sicaklikEl = document.getElementById("val_sicaklik");
+    if (sicaklikEl) {
+      sicaklikEl.innerHTML = sonSicaklik.toFixed(1) + " <span class='unit'>°C</span>";
     }
 
-    function toggleSection(id, arrow) { const content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } }
-    function openModal() { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; }function closeModal() { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; }
+    const bar = document.getElementById("bar_sicaklik");
+    if (bar) {
+      bar.style.width = Math.max(0, Math.min(100, sonSicaklik / 45 * 100)) + "%";
+    }
+
+    const sub = document.getElementById("sub_sicaklik");
+    if (sub) {
+      if (sonSicaklik < 15) {
+        sub.innerText = "● Düşük Sıcaklık";
+        sub.style.color = "#3498db";
+      } else if (sonSicaklik < 27) {
+        sub.innerText = "● Normal";
+        sub.style.color = "#21d89b";
+      } else if (sonSicaklik < 31) {
+        sub.innerText = "● Uyarı";
+        sub.style.color = "#f1c40f";
+      } else if (sonSicaklik < 36) {
+        sub.innerText = "● Yüksek";
+        sub.style.color = "#ff5c5c";
+      } else {
+        sub.innerText = "● Kritik";
+        sub.style.color = "#ff5c5c";
+      }
+    }
+
+    const alarm = document.getElementById("val_alarm");
+    if (alarm) {
+      if (sonSicaklik < 15)
+        alarm.innerHTML = '<span class="dot" style="background:#3498db;"></span>DÜŞÜK';
+      else if (sonSicaklik < 27)
+        alarm.innerHTML = '<span class="dot normal"></span>NORMAL';
+      else if (sonSicaklik < 31)
+        alarm.innerHTML = '<span class="dot warning"></span>UYARI';
+      else if (sonSicaklik < 36)
+        alarm.innerHTML = '<span class="dot critical"></span>YÜKSEK';
+      else
+        alarm.innerHTML = '<span class="dot critical"></span>KRİTİK ALARM';
+    }
+
+    const fan = document.getElementById("val_fan");
+    if (fan) {
+      if (data.fan !== undefined) {
+        const acik = data.fan === true || data.fan === 1 ||
+          String(data.fan).toLowerCase() === "on" ||
+          String(data.fan).toLowerCase() === "aktif";
+
+        fan.innerHTML = acik
+          ? '<span class="dot normal"></span>AÇIK'
+          : '<span class="dot" style="background:#e8ddff;"></span>KAPALI';
+      } else {
+        fan.innerHTML = sonSicaklik >= 31
+          ? '<span class="dot normal"></span>AÇIK'
+          : '<span class="dot" style="background:#e8ddff;"></span>KAPALI';
+      }
+    }
+
+    if (typeof sicaklikData !== "undefined") {
+      const now = Date.now();
+      sicaklikData.push({v: sonSicaklik, t: now});
+      if (sicaklikData.length > 60) sicaklikData.shift();
+      localStorage.setItem("sicaklikData", JSON.stringify(sicaklikData));
+      if (typeof ciz === "function")
+        ciz("sicaklikGrafik", sicaklikData, 10, 45, "°C");
+    }
+  }
+
+  if (data.nem !== undefined) {
+    sonNem = Number(data.nem);
+
+    const nemEl = document.getElementById("val_nem");
+    if (nemEl) {
+      nemEl.innerHTML = sonNem.toFixed(0) + " <span class='unit'>% RH</span>";
+    }
+
+    const barNem = document.getElementById("bar_nem");
+    if (barNem) barNem.style.width = Math.max(0, Math.min(100, sonNem)) + "%";
+
+    if (typeof nemData !== "undefined") {
+      const now = Date.now();
+      nemData.push({v: sonNem, t: now});
+      if (nemData.length > 60) nemData.shift();
+      localStorage.setItem("nemData", JSON.stringify(nemData));
+      if (typeof ciz === "function")
+        ciz("nemGrafik", nemData, 20, 80, "% RH");
+    }
+  }
+}
+
+db.ref("/SistemVerileri").on("value", function(snapshot) {
+  firebaseVerileriniUygula(snapshot.val());
+});
+
+db.ref("/OlayKayitlari").orderByChild("timestamp").on("value", function(snapshot) {
+  const tablo = document.getElementById("olayListesi");
+  if (!tablo) return;
+
+  tablo.innerHTML = "";
+
+  const birGunOnce = Date.now() - 24 * 60 * 60 * 1000;
+  const loglar = [];
+
+  snapshot.forEach(function(child) {
+    const log = child.val();
+    if (log && (log.timestamp === undefined || log.timestamp >= birGunOnce)) {
+      loglar.unshift(log);
+    }
+  });
+
+  if (loglar.length === 0) {
+    tablo.innerHTML =
+      "<tr><td colspan='5' style='text-align:center;color:#71849d;padding:25px;'>Henüz olay kaydı bulunmuyor.</td></tr>";
+    return;
+  }
+
+  loglar.forEach(function(log, index) {
+    const tr = document.createElement("tr");
+    tr.className = "log-row";
+
+    const seviye = log.seviye || "INFO";
+    const zaman = log.zaman ||
+      (log.timestamp ? new Date(log.timestamp).toLocaleString("tr-TR") : "-");
+    const kaynak = log.kaynak || "-";
+    const mesaj = log.aciklama || log.mesaj || "-";
+    const kritik = seviye === "Kritik" ||
+                   seviye === "CRITICAL" ||
+                   seviye === "HIGH" ||
+                   seviye === "ERROR";
+
+    const renk = kritik
+      ? "background:#5a2020;color:#ff7373;"
+      : seviye === "WARNING"
+      ? "background:#5a4b18;color:#f1c40f;"
+      : "background:#18345d;color:#5ea0ff;";
+
+    tr.innerHTML =
+      "<td>" + zaman + "</td>" +
+      "<td><span class='badge' style='" + renk + "'>" + seviye + "</span></td>" +
+      "<td><b>" + kaynak + "</b></td>" +
+      "<td>" + mesaj + "</td>" +
+      "<td>" + (kritik ? "▼" : "") + "</td>";
+
+    tablo.appendChild(tr);
+  });
+});
+
+function sifreGuncelle() {
+  const input = document.getElementById("yeniSifreMetni");
+  if (!input) return;
+
+  const yeniSifre = input.value;
+
+  if (/^\d{4}$/.test(yeniSifre)) {
+    db.ref("serverguard").update({aktif_sifre: yeniSifre})
+      .then(function() {
+        alert("Şifre veritabanına başarıyla gönderildi!");
+        if (typeof closeModal === "function") closeModal();
+        input.value = "";
+      })
+      .catch(function(error) {
+        alert("Şifre güncellenemedi: " + error.message);
+      });
+  } else {
+    alert("Lütfen 4 haneli sayısal şifre girin.");
+  }
+}
+
+function openModal() {
+  const p = document.getElementById("sifrePencerem");
+  const b = document.getElementById("modalBackdrop");
+  if (p) p.style.display = "block";
+  if (b) b.style.display = "block";
+}
+
+function closeModal() {
+  const p = document.getElementById("sifrePencerem");
+  const b = document.getElementById("modalBackdrop");
+  if (p) p.style.display = "none";
+  if (b) b.style.display = "none";
+}
 </script>
