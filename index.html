@@ -39,19 +39,91 @@
     @media(max-width: 600px) { .cards { grid-template-columns: 1fr; } }
   </style>
 
-   <!-- Firebase Bağlantı Kütüphaneleri -->
+  <!-- Firebase Bağlantı Kütüphaneleri -->
   <script src="https://gstatic.com"></script>
   <script src="https://gstatic.com"></script>
+</head>
+<body>
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="page">
+    <h1 style="text-align: center; color: #f2f7fc; font-size: 26px; margin: 5px 0 25px 0;">Sunucu Odası Nem ve Sıcaklık Takip Sistemi</h1>
 
+    <!-- CANLI KART TASARIMLARINIZ -->
+    <div class="cards">
+      <div class="card">
+        <div class="icon blue">♨</div>
+        <div class="card-name">Anlık Sıcaklık</div>
+        <div class="card-value" id="val_sicaklik">-- <span class="unit">°C</span></div>
+        <div class="sub" id="sub_sicaklik">● Bağlanıyor...</div>
+        <div class="line"><span id="bar_sicaklik"></span></div>
+      </div>
+
+      <div class="card">
+        <div class="icon cyan">♨</div>
+        <div class="card-name">Anlık Nem</div>
+        <div class="card-value" id="val_nem">-- <span class="unit">% RH</span></div>
+        <div class="sub" id="sub_nem">İdeal Nem (%40 - %55)</div>
+        <div class="line"><span id="bar_nem" style="background: #00c8e8;"></span></div>
+      </div>
+
+      <div class="card">
+        <div class="icon green">♧</div>
+        <div class="card-name">Alarm Durumu</div>
+        <div class="status" id="val_alarm">--</div>
+      </div>
+
+      <div class="card">
+        <div class="icon">⚡</div>
+        <div class="card-name">Havalandırma</div>
+        <div class="status" id="val_fan">--</div>
+      </div>
+
+      <div class="card">
+        <div class="icon purple">⌁</div>
+        <div class="card-name">Wi-Fi Bağlantısı</div>
+        <div class="card-value">100 <span class="unit">%</span></div>
+        <div class="sub">Bulut Bağlantısı Aktif</div>
+        <div style="font-size: 11px; color: #71849d; margin-top: 18px;">Haberleşme: Firebase REST</div>
+      </div>
+    </div>
+
+    <!-- ŞİFRE DEĞİŞTİRME BUTONU -->
+    <div style="margin-top:20px; text-align:center; margin-bottom: 25px;">
+      <button onclick="openModal()" style="background:#ffc107; color:#333; padding:12px; font-weight:bold; cursor:pointer; border:none; border-radius:6px; width:280px;">Şifre Değiştirmek İçin Tıklayın</button>
+    </div>
+    
+    <div id="sifrePencerem" class="modal">
+      <h3 style="margin-top:0;">Yeni Ortak Şifre Belirleyin</h3>
+      <input type="password" id="yeniSifreMetni" placeholder="Yeni 4 Haneli Şifre" maxlength="4" style="padding:11px; width:100%; margin-bottom:12px; border-radius:5px; border:1px solid #31435d; background:#101b2d; color:#fff; text-align:center;"><br>
+      <button onclick="sifreGuncelle()" style="background:#28a745; width:100%; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:5px; cursor:pointer; margin-bottom: 8px;">Şifreyi Güncelle</button>
+      <button onclick="closeModal()" style="background:#dc3545; width:100%; color:#fff; padding:5px; border:none; border-radius:5px; cursor:pointer;">Kapat</button>
+    </div>
+
+    <!-- TABLO ALANI -->
+    <div class="section">
+      <div class="section-title" onclick="toggleSection('olayBolumu',this.querySelector('.arrow'))">
+        <span>⚙ &nbsp; Olay Kayıtları</span><span class="arrow">▼</span>
+      </div>
+      <div id="olayBolumu" class="section-content">
+        <table class="table">
+          <thead>
+            <tr><th>Zaman</th><th>Seviye</th><th>Kaynak</th><th>Açıklama</th></tr>
+          </thead>
+          <tbody id="olayListesi"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE JAVASCRIPT BAĞLANTI MOTORU -->
   <script>
-    // Sizin Gerçek Firebase Bağlantı Ayarınız
     const firebaseConfig = {
       databaseURL: "https://sunucuodasitakipvesogutma-default-rtdb.firebaseio.com/"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ANLIK SENSÖR VERİLERİNİ TAKİP ETME MOTORU
+    // Veri dinleme
     db.ref("/SistemVerileri").on("value", (snapshot) => {
       const data = snapshot.val();
       if(data) {
@@ -77,7 +149,7 @@
       }
     });
 
-    // GIZLI LOG FİLTRELEME MOTORU
+    // 24 saatlik log motoru
     db.ref("/OlayKayitlari").orderByChild("timestamp").on("value", (snapshot) => {
       const tbody = document.getElementById("olayListesi");
       if(!tbody) return;
@@ -102,22 +174,10 @@
       });
     });
 
-    // ŞIFRE GÜNCELLEME MOTORU
+    // Şifre gönderme motoru
     function sifreGuncelle() {
       const yeniSifre = document.getElementById("yeniSifreMetni").value;
       if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {
         db.ref("SistemAyarlari").update({ aktif_sifre: yeniSifre }).then(() => { 
           alert("Şifre Firebase'e başarıyla gönderildi!"); 
-          closeModal(); 
-        });
-      } else { 
-        alert("Lütfen 4 haneli sayısal şifre girin."); 
-      }
-    }
-
-    function toggleSection(id, arrow) { const content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } }
-    function openModal() { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; }
-    function closeModal() { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; }
-  </script>
-</body>
-</html>
+    closeModal();});} else {alert("Lütfen 4 haneli sayısal şifre girin.");}}function toggleSection(id, arrow) { const content = document.getElementById(id); if(content) { content.classList.toggle('open'); arrow.classList.toggle('open'); } }function openModal() { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; }function closeModal() { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; }
