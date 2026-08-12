@@ -117,7 +117,7 @@
   <script>
     // === BURAYI KENDİ FIREBASE REALTIME DATABASE URL'NİZLE DEĞİŞTİRİN ===
     const firebaseConfig = {
-      databaseURL: "https://firebaseio.com" 
+      databaseURL: "https://sunucuodasitakipvesogutma-default-rtdb.firebaseio.com/" 
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -125,19 +125,20 @@
     // ANLIK VERİLERİ DİNLEME
     db.ref("/SistemVerileri").on("value", (snapshot) => {
       const data = snapshot.val();
-      if(data) {
-        if(data.sicaklik !== undefined) {
-          document.getElementById("val_sicaklik").innerHTML = `${data.sicaklik} <span class="unit">°C</span>`;
-          document.getElementById("bar_sicaklik").style.width = `${(data.sicaklik / 50) * 100}%`;
+      if (data) {
+        if (data.sicaklik !== undefined) {
+          document.getElementById("val_sicaklik").innerHTML = data.sicaklik + " <span class='unit'>°C</span>";
+          document.getElementById("bar_sicaklik").style.width = (data.sicaklik / 50 * 100) + "%";
           document.getElementById("sub_sicaklik").innerText = data.sicaklik > 32 ? "⚠️ Kritik Sıcaklık!" : "● Sıcaklık Dengeli";
           document.getElementById("val_alarm").innerHTML = data.sicaklik > 32 ? '<span class="dot critical"></span><span>Tehlike</span>' : '<span class="dot normal"></span><span>Normal</span>';
           document.getElementById("val_fan").innerHTML = data.sicaklik > 28 ? '<span class="dot normal"></span><span>Aktif (Fan Açık)</span>' : '<span class="dot critical"></span><span>Kapalı</span>';
         }
-        if(data.nem !== undefined) {
-          document.getElementById("val_nem").innerHTML = `${data.nem} <span class="unit">% RH</span>`;
-          document.getElementById("bar_nem").style.width = `${data.nem}%`;
+        if (data.nem !== undefined) {
+          document.getElementById("val_nem").innerHTML = data.nem + " <span class='unit'>% RH</span>";
+          document.getElementById("bar_nem").style.width = data.nem + "%";
         }
       }
+
     });
 
     // 24 SAATLİK (1 GÜNLÜK) GİZLİ FİLTRELEME MOTORU
