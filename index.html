@@ -39,8 +39,8 @@
     @media(max-width: 600px) { .cards { grid-template-columns: 1fr; } }
   </style>
 
-  <script src="https://gstatic.com"></script>
-  <script src="https://gstatic.com"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head>
 <body>
   <div class="modal-backdrop" id="modalBackdrop"></div>
@@ -113,7 +113,7 @@
 
   <script>
     var firebaseConfig = {
-      databaseURL: "https://firebaseio.com"
+      databaseURL: "https://sunucuodasitakipvesogutma-default-rtdb.firebaseio.com/"
     };
     firebase.initializeApp(firebaseConfig);
     var db = firebase.database();
