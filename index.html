@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServerGuard Akıllı İstasyon Kontrol Paneli</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0b1422; color: #dce7f5; font-family: 'Segoe UI', Arial, sans-serif; }
+    .page { padding: 22px; max-width: 1500px; margin: auto; }
+    .cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 24px; }
+    .card { background: #1b293d; border: 1px solid #31435d; border-radius: 12px; padding: 20px; min-height: 205px; box-shadow: 0 8px 20px rgba(0,0,0,.20); }
+    .card-name { color: #9fb0c8; font-size: 14px; margin-bottom: 8px; }
+    .card-value { font-size: 34px; font-weight: 700; color: #f2f7fc; }
+    .unit { font-size: 15px; color: #b7c4d5; font-weight: 400; }
+    .sub { font-size: 12px; margin-top: 8px; color: #21d89b; }
+    .line { height: 5px; background: #0e1726; border-radius: 5px; margin-top: 18px; overflow: hidden; }
+    .line span { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #2f80ed, #e74c3c); border-radius: 5px; transition: width 0.5s ease; }
+    .icon { width: 42px; height: 42px; border-radius: 9px; background: #243754; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 15px; }
+    .blue { color: #3b8cff; } .cyan { color: #00c8e8; } .green { color: #19d59b; } .purple { color: #8a7cff; }
+    .status { display: flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; margin-top: 10px; }
+    .dot { width: 17px; height: 17px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .normal { background: #63e6a8; box-shadow: 0 0 10px #63e6a8; }
+    .critical { background: #ff5c5c; box-shadow: 0 0 10px #ff5c5c; }
+    .section { background: #1b293d; border: 1px solid #31435d; border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+    .section-title { padding: 19px 22px; cursor: pointer; font-size: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; background: #1d2b40; }
+    .section-title:hover { background: #22334b; }
+    .arrow { font-size: 20px; color: #6f829d; transition: .2s; }
+    .arrow.open { transform: rotate(180deg); }
+    .section-content { display: none; padding: 20px; border-top: 1px solid #304158; }
+    .section-content.open { display: block; }
+    .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .table th { text-align: left; background: #0e1728; color: #8fa3bd; padding: 13px; }
+    .table td { padding: 13px; border-bottom: 1px solid #304158; color: #d5dfeb; }
+    .badge { padding: 4px 9px; border-radius: 4px; background: #18345d; color: #5ea0ff; font-size: 11px; font-weight: bold; }
+    .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1b293d; padding: 25px; border-radius: 12px; width: 320px; border: 1px solid #31435d; z-index: 1000; text-align: center; }
+    .modal-backdrop { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 999; }
+    @media(max-width: 1000px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+    @media(max-width: 600px) { .cards { grid-template-columns: 1fr; } }
+  </style>
+
+  <!-- Resmi Güncel Firebase SDK Paketleri -->
+  <script src="https://gstatic.com"></script>
+  <script src="https://gstatic.com"></script>
+</head>
+<body>
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="page">
+    <h1 style="text-align: center; color: #f2f7fc; font-size: 26px; margin: 5px 0 25px 0;">Sunucu Odası Nem ve Sıcaklık Takip Sistemi</h1>
+
+    <div class="cards">
+      <div class="card">
+        <div class="icon blue">♨</div>
+        <div class="card-name">Anlık Sıcaklık</div>
+        <div class="card-value" id="val_sicaklik">-- <span class="unit">°C</span></div>
+        <div class="sub" id="sub_sicaklik">● Bağlanıyor...</div>
+        <div class="line"><span id="bar_sicaklik"></span></div>
+      </div>
+
+      <div class="card">
+        <div class="icon cyan">♨</div>
+        <div class="card-name">Anlık Nem</div>
+        <div class="card-value" id="val_nem">-- <span class="unit">% RH</span></div>
+        <div class="sub">İdeal Nem (%40 - %55)</div>
+        <div class="line"><span id="bar_nem" style="background: #00c8e8;"></span></div>
+      </div>
+
+      <div class="card">
+        <div class="icon green">♧</div>
+        <div class="card-name">Alarm Durumu</div>
+        <div class="status" id="val_alarm">--</div>
+      </div>
+
+      <div class="card">
+        <div class="icon">⚡</div>
+        <div class="card-name">Havalandırma</div>
+        <div class="status" id="val_fan">--</div>
+      </div>
+
+      <div class="card">
+        <div class="icon purple">⌁</div>
+        <div class="card-name">Wi-Fi Bağlantısı</div>
+        <div class="card-value">100 <span class="unit">%</span></div>
+        <div class="sub">Bulut Bağlantısı Aktif</div>
+        <div style="font-size: 11px; color: #71849d; margin-top: 18px;">Haberleşme: Firebase REST</div>
+      </div>
+    </div>
+
+    <!-- ŞİFRE DEĞİŞTİRME BUTONU -->
+    <div style="margin-top:20px; text-align:center; margin-bottom: 25px;">
+      <button onclick="openModal()" style="background:#ffc107; color:#333; padding:12px; font-weight:bold; cursor:pointer; border:none; border-radius:6px; width:280px;">Şifre Değiştirmek İçin Tıklayın</button>
+    </div>
+    
+    <div id="sifrePencerem" class="modal">
+      <h3 style="margin-top:0;">Yeni Ortak Şifre Belirleyin</h3>
+      <input type="password" id="yeniSifreMetni" placeholder="Yeni 4 Haneli Şifre" maxlength="4" style="padding:11px; width:100%; margin-bottom:12px; border-radius:5px; border:1px solid #31435d; background:#101b2d; color:#fff; text-align:center;"><br>
+      <button onclick="sifreGuncelle()" style="background:#28a745; width:100%; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:5px; cursor:pointer; margin-bottom: 8px;">Şifreyi Güncelle</button>
+      <button onclick="closeModal()" style="background:#dc3545; width:100%; color:#fff; padding:5px; border:none; border-radius:5px; cursor:pointer;">Kapat</button>
+    </div>
+
+    <!-- OLAY KAYITLARI TABLOSU (Metin aynen korundu) -->
+    <div class="section">
+      <div class="section-title" onclick="toggleSection('olayBolumu',this.querySelector('.arrow'))">
+        <span>⚙ &nbsp; Olay Kayıtları</span><span class="arrow">▼</span>
+      </div>
+      <div id="olayBolumu" class="section-content">
+        <table class="table">
+          <thead>
+            <tr><th>Zaman</th><th>Seviye</th><th>Kaynak</th><th>Açıklama</th></tr>
+          </thead>
+          <tbody id="olayListesi"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === BURAYI KENDİ FIREBASE REALTIME DATABASE URL'NİZLE DEĞİŞTİRİN ===
+    const firebaseConfig = {
+      databaseURL: "https://firebaseio.com" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ANLIK VERİLERİ DİNLEME
+    db.ref("/SistemVerileri").on("value", (snapshot) => {
+      const data = snapshot.val();
+      if(data) {
+        if(data.sicaklik !== undefined) {
+          document.getElementById("val_sicaklik").innerHTML = `${data.sicaklik} <span class="unit">°C</span>`;
+          document.getElementById("bar_sicaklik").style.width = `${(data.sicaklik / 50) * 100}%`;
+          document.getElementById("sub_sicaklik").innerText = data.sicaklik > 32 ? "⚠️ Kritik Sıcaklık!" : "● Sıcaklık Dengeli";
+          document.getElementById("val_alarm").innerHTML = data.sicaklik > 32 ? '<span class="dot critical"></span><span>Tehlike</span>' : '<span class="dot normal"></span><span>Normal</span>';
+          document.getElementById("val_fan").innerHTML = data.sicaklik > 28 ? '<span class="dot normal"></span><span>Aktif (Fan Açık)</span>' : '<span class="dot critical"></span><span>Kapalı</span>';
+        }
+        if(data.nem !== undefined) {
+          document.getElementById("val_nem").innerHTML = `${data.nem} <span class="unit">% RH</span>`;
+          document.getElementById("bar_nem").style.width = `${data.nem}%`;
+        }
+      }
+    });
+
+    // 24 SAATLİK (1 GÜNLÜK) GİZLİ FİLTRELEME MOTORU
+    db.ref("/OlayKayitlari").orderByChild("timestamp").on("value", (snapshot) => {
+      const tbody = document.getElementById("olayListesi");
+      tbody.innerHTML = "";
+      
+      // 1 günün milisaniye cinsinden hesabı (24 saat * 60 dk * 60 sn * 1000 ms)
+      const birGunOnce = Date.now() - (24 * 60 * 60 * 1000); 
+      let loglar = [];
+
+      snapshot.forEach((childSnapshot) => {
+        const log = childSnapshot.val();
+        if (log.timestamp >= birGunOnce) {
+          loglar.unshift(log); // En yeni kaydı en üste koy
+        } else {
+          childSnapshot.ref.remove(); // 24 saatten eski logları veritabanından gizlice ve otomatik siler
+        }
+      });
+
+      loglar.forEach(log => {
+        const row = document.createElement("tr");
+        let badgeColor = log.seviye === "Kritik" ? "background:#ff5c5c; color:#fff;" : "background:#18345d; color:#5ea0ff;";
+        row.innerHTML = `<td>${log.zaman}</td><td><span class="badge" style="${badgeColor}">${log.seviye}</span></td><td>${log.kaynak}</td><td>${log.aciklama}</td>`;
+        tbody.appendChild(row);
+      });
+    });
+
+    // Arayüzdeki Şifre Güncelleme Motoru
+  function sifreGuncelle() {
+  const yeniSifre = document.getElementById("yeniSifreMetni").value;
+  
+  // 4 haneli ve sayı kontrolü
+  if(yeniSifre.length === 4 && !isNaN(yeniSifre)) {
+    
+    // Doğrudan ana dizindeki veya SistemAyarlari altındaki "aktif_sifre" alanını yazar
+    db.ref("SistemAyarlari").update({
+      aktif_sifre: yeniSifre
+    }).then(() => {
+      alert("Yeni şifre veritabanına (aktif_sifre) başarıyla kaydedildi!");
+      closeModal();
+    }).catch((error) => {
+      alert("Veritabanı hatası: " + error.message);
+    });
+    
+  } else {
+    alert("Lütfen sadece 4 haneli sayısal bir şifre girin.");
+  }
+}
+
+  function toggleSection(id, arrow) { const content = document.getElementById(id); content.classList.toggle('open'); arrow.classList.toggle('open'); }function openModal() { document.getElementById("sifrePencerem").style.display = "block"; document.getElementById("modalBackdrop").style.display = "block"; }function closeModal() { document.getElementById("sifrePencerem").style.display = "none"; document.getElementById("modalBackdrop").style.display = "none"; }
+
