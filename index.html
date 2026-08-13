@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ServerGuard Akıllı İstasyon Kontrol Paneli</title>
+<title>Sunucu Odası Akıllı Takip ve Soğutma Sistemi</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1422;color:#dce7f5;font-family:'Segoe UI',Arial,sans-serif}
@@ -271,7 +271,7 @@ function sifreGuncelle(){
   const yeni=input.value.trim();
   if(!/^\d{4}$/.test(yeni)){alert("Lütfen 4 haneli sayısal şifre girin.");return;}
   db.ref("/serverguard/aktif_sifre").set(yeni).then(()=>{
-    alert("Yeni aktif şifre Firebase'e kaydedildi.");
+    alert("Şifre değiştirildi.");
     input.value="";closeModal();
   }).catch(e=>alert("Şifre kaydedilemedi: "+e.message));
 }
