@@ -89,7 +89,7 @@ button{font-family:inherit}
 
 <div id="sifrePencerem" class="modal">
 <h3 style="margin-top:0">Yeni Aktif Şifre</h3>
-<p style="font-size:12px;color:#9fb0c8">Bu şifre Firebase'deki <b>aktif_sifre</b> alanına kaydedilir ve ESP8266 üzerinden Arduino'ya gönderilir.</p>
+<p style="font-size:12px;color:#9fb0c8"></p>
 <input type="password" id="yeniSifreMetni" inputmode="numeric" pattern="[0-9]*" placeholder="4 Haneli Şifre" maxlength="4"
 style="padding:11px;width:100%;margin-bottom:12px;border-radius:5px;border:1px solid #31435d;background:#101b2d;color:#fff;text-align:center">
 <button onclick="sifreGuncelle()" style="background:#28a745;width:100%;color:#fff;font-weight:bold;padding:10px;border:none;border-radius:5px;cursor:pointer;margin-bottom:8px">Şifreyi Güncelle</button>
@@ -97,28 +97,48 @@ style="padding:11px;width:100%;margin-bottom:12px;border-radius:5px;border:1px s
 </div>
 
 <div class="section">
-<div class="section-title" onclick="toggleSection('sicaklikBolumu',this.querySelector('.arrow'))">
-<span>⌁ &nbsp; Sıcaklık Grafiği (°C)</span><span class="arrow" id="arrow_sicaklik">▼</span>
-</div>
-<div id="sicaklikBolumu" class="section-content">
-<div class="chart-box">
-<div class="chart-header"><div class="chart-title">Sıcaklık Geçmişi</div><div>
-<canvas id="sicaklikGrafik"></canvas>
-</div>
-</div>
-</div>
+  <!-- 1. Başlık Alanı -->
+  <div class="section-title" onclick="toggleSection('sicaklikBolumu',this.querySelector('.arrow'))">
+    <span>⌁ &nbsp; Sıcaklık Grafiği (°C)</span><span class="arrow" id="arrow_sicaklik">▼</span>
+  </div>
+  
+  <!-- 2. İçerik Alanı -->
+  <div id="sicaklikBolumu" class="section-content">
+    <div class="chart-box">
+      <!-- Grafik Başlığı ayrı bir kutu olarak düzeltildi ve kapatıldı -->
+      <div class="chart-header">
+        <div class="chart-title">Sıcaklık Geçmişi</div>
+      </div>
+      <!-- Grafik Tuvali (Canvas) yarım etiketlerden kurtarıldı ve kendi kutusuna alındı -->
+      <div class="chart-container" style="position: relative; height: 220px; width: 100%;">
+        <canvas id="sicaklikGrafik"></canvas>
+      </div>
+    </div>
+  </div> <!-- section-content kapatması -->
+</div> <!-- section kapatması -->
+
 
 <div class="section">
-<div class="section-title" onclick="toggleSection('nemBolumu',this.querySelector('.arrow'))">
-<span>∿ &nbsp; Nem Grafiği (% RH)</span><span class="arrow" id="arrow_nem">▼</span>
-</div>
-<div id="nemBolumu" class="section-content">
-<div class="chart-box">
-<div class="chart-header"><div class="chart-title">Nem Geçmişi</div><div>
-<canvas id="nemGrafik"></canvas>
-</div>
-</div>
-</div>
+  <!-- 1. Başlık Alanı -->
+  <div class="section-title" onclick="toggleSection('nemBolumu',this.querySelector('.arrow'))">
+    <span>∿ &nbsp; Nem Grafiği (% RH)</span><span class="arrow" id="arrow_nem">▼</span>
+  </div>
+  
+  <!-- 2. İçerik Alanı -->
+  <div id="nemBolumu" class="section-content">
+    <div class="chart-box">
+      <!-- Grafik Başlığı ayrı bir kutu olarak kapatıldı -->
+      <div class="chart-header">
+        <div class="chart-title">Nem Geçmişi</div>
+      </div>
+      <!-- Grafik Tuvali (Canvas) başlığın dışına, kendi kutusuna alındı -->
+      <div class="chart-container" style="position: relative; height: 220px; width: 100%;">
+        <canvas id="nemGrafik"></canvas>
+      </div>
+    </div>
+  </div> <!-- section-content kapatması -->
+</div> <!-- section kapatması -->
+
 
 <div class="section">
 <div class="section-title" onclick="toggleSection('olayBolumu',this.querySelector('.arrow'))">
