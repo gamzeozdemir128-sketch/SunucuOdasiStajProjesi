@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sunucu Odası Nem ve Sıcaklık Takip Sistemi</title>
+<title>ServerGuard Akıllı İstasyon Kontrol Paneli</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1422;color:#dce7f5;font-family:'Segoe UI',Arial,sans-serif}
@@ -84,28 +84,25 @@ button{font-family:inherit}
 </div>
 
 <div style="margin:20px 0 25px;text-align:center">
-<button onclick="openModal()" style="background:#263a56;color:#fff;padding:12px 28px;font-weight:600;cursor:pointer;border:1px solid #405777;border-radius:7px;min-width:220px;font-size:14px">🔐 Şifre Değiştir</button>
+<button onclick="openModal()" style="background:#ffc107;color:#333;padding:12px 22px;font-weight:bold;cursor:pointer;border:none;border-radius:6px;min-width:280px">🔐 Şifre Değiştir</button>
 </div>
 
-<div id="sifrePencerem" class="modal" style="width:360px;padding:28px;background:#172438">
-<div style="font-size:25px;margin-bottom:10px">🔐</div>
-<h3 style="margin:0 0 20px;color:#f2f7fc;font-size:19px">Şifre Değiştir</h3>
-
-<input type="password" id="yeniSifreMetni" inputmode="numeric" pattern="[0-9]*"
-placeholder="Yeni şifre" maxlength="4"
-style="padding:12px;width:100%;margin-bottom:14px;border-radius:6px;border:1px solid #405777;background:#0e1726;color:#fff;text-align:center;font-size:17px;letter-spacing:5px">
-
-<button onclick="sifreGuncelle()" style="background:#2f80ed;width:100%;color:#fff;font-weight:600;padding:11px;border:none;border-radius:6px;cursor:pointer;font-size:14px;margin-bottom:9px">Şifreyi Değiştir</button>
-<button onclick="closeModal()" style="background:#27374d;width:100%;color:#b9c6d8;padding:9px;border:1px solid #405777;border-radius:6px;cursor:pointer;font-size:13px">Vazgeç</button>
+<div id="sifrePencerem" class="modal">
+<h3 style="margin-top:0">Yeni Aktif Şifre</h3>
+<p style="font-size:12px;color:#9fb0c8">Bu şifre Firebase'deki <b>aktif_sifre</b> alanına kaydedilir ve ESP8266 üzerinden Arduino'ya gönderilir.</p>
+<input type="password" id="yeniSifreMetni" inputmode="numeric" pattern="[0-9]*" placeholder="4 Haneli Şifre" maxlength="4"
+style="padding:11px;width:100%;margin-bottom:12px;border-radius:5px;border:1px solid #31435d;background:#101b2d;color:#fff;text-align:center">
+<button onclick="sifreGuncelle()" style="background:#28a745;width:100%;color:#fff;font-weight:bold;padding:10px;border:none;border-radius:5px;cursor:pointer;margin-bottom:8px">Şifreyi Güncelle</button>
+<button onclick="closeModal()" style="background:#dc3545;width:100%;color:#fff;padding:7px;border:none;border-radius:5px;cursor:pointer">Kapat</button>
 </div>
 
 <div class="section">
 <div class="section-title" onclick="toggleSection('sicaklikBolumu',this.querySelector('.arrow'))">
-<span>🌡️ &nbsp; Sıcaklık Grafiği (°C)</span><span class="arrow" id="arrow_sicaklik">▼</span>
+<span>⌁ &nbsp; Sıcaklık Grafiği (°C)</span><span class="arrow" id="arrow_sicaklik">▼</span>
 </div>
 <div id="sicaklikBolumu" class="section-content">
 <div class="chart-box">
-<div class="chart-header"><div class="chart-title">Sıcaklık Geçmişi</div><div 
+<div class="chart-header"><div class="chart-title">Sıcaklık Geçmişi</div><div
 <canvas id="sicaklikGrafik"></canvas>
 </div>
 </div>
@@ -113,11 +110,11 @@ style="padding:12px;width:100%;margin-bottom:14px;border-radius:6px;border:1px s
 
 <div class="section">
 <div class="section-title" onclick="toggleSection('nemBolumu',this.querySelector('.arrow'))">
-<span>💦 &nbsp; Nem Grafiği (% RH)</span><span class="arrow" id="arrow_nem">▼</span>
+<span>∿ &nbsp; Nem Grafiği (% RH)</span><span class="arrow" id="arrow_nem">▼</span>
 </div>
 <div id="nemBolumu" class="section-content">
 <div class="chart-box">
-<div class="chart-header"><div class="chart-title">Nem Geçmişi</div><div
+<div class="chart-header"><div class="chart-title">Nem Geçmişi</div><div 
 <canvas id="nemGrafik"></canvas>
 </div>
 </div>
@@ -145,11 +142,11 @@ const db=firebase.database();
 
 function durumSicaklik(t){
   t=Number(t);
-  if(t<18) return {text:"● Düşük Sıcaklık", cls:"low", color:"#3498db"};
+  if(t<15) return {text:"● Düşük Sıcaklık", cls:"low", color:"#3498db"};
   if(t<27) return {text:"● Normal", cls:"normal", color:"#21d89b"};
   if(t<31) return {text:"● Uyarı", cls:"warning", color:"#f1c40f"};
   if(t<36) return {text:"● Yüksek", cls:"critical", color:"#ff5c5c"};
-  return {text:"● Kritik Sıcaklık", cls:"critical", color:"#ff5c5c"};
+  return {text:"● Kritik", cls:"critical", color:"#ff5c5c"};
 }
 
 function uygulaAnlik(data){
@@ -190,17 +187,12 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     ctx.fillStyle="#71849d";ctx.font="14px Segoe UI";ctx.fillText("Henüz grafik verisi yok.",20,40);return;
   }
   const pad={l:48,r:15,t:20,b:35}, pw=w-pad.l-pad.r, ph=h-pad.t-pad.b;
-// BULUP SİLECEĞİNİZ ESKİ KISIM (Sadece yatay çizgileri çizen döngü):
-ctx.strokeStyle="#304158";ctx.lineWidth=1;
-for(let i=0;i<=5;i++){
-  const y=pad.t+ph*i/5;
-  ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();
-  const v=maxY-(maxY-minY)*i/5;
-  ctx.fillStyle="#71849d";ctx.font="11px Segoe UI";ctx.fillText(v.toFixed(0)+suffix,5,y+4);
-}
-
-
-
+  ctx.strokeStyle="#304158";ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=pad.t+ph*i/5;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();
+    const v=maxY-(maxY-minY)*i/5;
+    ctx.fillStyle="#71849d";ctx.font="11px Segoe UI";ctx.fillText(v.toFixed(0)+suffix,5,y+4);
   }
   const vals=veriler.map(x=>Number(x.v)).filter(Number.isFinite);
   const lo=Math.min(minY,Math.min(...vals)), hi=Math.max(maxY,Math.max(...vals));
@@ -259,10 +251,9 @@ function sifreGuncelle(){
   const yeni=input.value.trim();
   if(!/^\d{4}$/.test(yeni)){alert("Lütfen 4 haneli sayısal şifre girin.");return;}
   db.ref("/serverguard/aktif_sifre").set(yeni).then(()=>{
-    input.value="";
-    closeModal();
-    showSuccess("Şifre değiştirildi");
-  }).catch(e=>alert("Şifre değiştirilemedi."));
+    alert("Yeni aktif şifre Firebase'e kaydedildi.");
+    input.value="";closeModal();
+  }).catch(e=>alert("Şifre kaydedilemedi: "+e.message));
 }
 
 function toggleSection(id,arrow){
@@ -284,17 +275,10 @@ function restoreSections(){
   });
 }
 
-function showSuccess(message){
-  const box=document.createElement("div");
-  box.textContent="✓  "+message;
-  box.style.cssText="position:fixed;top:28px;right:28px;background:#183c32;color:#6ff0bb;border:1px solid #2c8068;border-radius:7px;padding:13px 20px;font-size:14px;font-weight:600;z-index:2000;box-shadow:0 8px 25px rgba(0,0,0,.3)";
-  document.body.appendChild(box);
-  setTimeout(()=>box.remove(),2200);
-}
-
 function openModal(){document.getElementById("sifrePencerem").style.display="block";document.getElementById("modalBackdrop").style.display="block";}
 function closeModal(){document.getElementById("sifrePencerem").style.display="none";document.getElementById("modalBackdrop").style.display="none";}
 
 restoreSections();
 window.addEventListener("resize",()=>{});
 </script>
+
