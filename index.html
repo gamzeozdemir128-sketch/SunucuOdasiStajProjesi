@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ServerGuard Akıllı İstasyon Kontrol Paneli</title>
+<title>Sunucu Odası Nem ve Sıcaklık Takip Sistemi</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1422;color:#dce7f5;font-family:'Segoe UI',Arial,sans-serif}
@@ -55,8 +55,8 @@ button{font-family:inherit}
 
 <div class="cards">
 <div class="card">
-<div class="icon blue">♨</div>
-<div class="card-name">Anlık Sıcaklık</div>
+<div class="icon blue">☀️</div>
+<div class="card-name">Sıcaklık</div>
 <div class="card-value" id="val_sicaklik">-- <span class="unit">°C</span></div>
 <div class="sub" id="sub_sicaklik">● Bağlanıyor...</div>
 <div class="line"><span id="bar_sicaklik"></span></div>
@@ -64,20 +64,20 @@ button{font-family:inherit}
 
 <div class="card">
 <div class="icon cyan">♨</div>
-<div class="card-name">Anlık Nem</div>
+<div class="card-name">Nem</div>
 <div class="card-value" id="val_nem">-- <span class="unit">% RH</span></div>
 <div class="sub">İdeal Nem (%40 - %55)</div>
 <div class="line"><span id="bar_nem" style="background:#00c8e8"></span></div>
 </div>
 
 <div class="card">
-<div class="icon green">♧</div>
+<div class="icon green">🚨</div>
 <div class="card-name">Alarm Durumu</div>
 <div class="status" id="val_alarm">--</div>
 </div>
 
 <div class="card">
-<div class="icon">⚡</div>
+<div class="icon">彡</div>
 <div class="card-name">Havalandırma</div>
 <div class="status" id="val_fan">--</div>
 </div>
@@ -105,7 +105,7 @@ style="padding:12px;width:100%;margin-bottom:14px;border-radius:6px;border:1px s
 </div>
 <div id="sicaklikBolumu" class="section-content">
 <div class="chart-box">
-<div class="chart-header"><div class="chart-title">Sıcaklık Geçmişi</div><div class="live">FIREBASE GEÇMİŞİ</div></div>
+<div class="chart-header"><div class="chart-title">Sıcaklık Geçmişi</div><div 
 <canvas id="sicaklikGrafik"></canvas>
 </div>
 </div>
@@ -117,7 +117,7 @@ style="padding:12px;width:100%;margin-bottom:14px;border-radius:6px;border:1px s
 </div>
 <div id="nemBolumu" class="section-content">
 <div class="chart-box">
-<div class="chart-header"><div class="chart-title">Nem Geçmişi</div><div class="live">FIREBASE GEÇMİŞİ</div></div>
+<div class="chart-header"><div class="chart-title">Nem Geçmişi</div><div
 <canvas id="nemGrafik"></canvas>
 </div>
 </div>
@@ -149,7 +149,7 @@ function durumSicaklik(t){
   if(t<27) return {text:"● Normal", cls:"normal", color:"#21d89b"};
   if(t<31) return {text:"● Uyarı", cls:"warning", color:"#f1c40f"};
   if(t<36) return {text:"● Yüksek", cls:"critical", color:"#ff5c5c"};
-  return {text:"● Kritik", cls:"critical", color:"#ff5c5c"};
+  return {text:"● Kritik Sıcaklık", cls:"critical", color:"#ff5c5c"};
 }
 
 function uygulaAnlik(data){
