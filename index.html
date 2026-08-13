@@ -101,7 +101,7 @@ style="padding:12px;width:100%;margin-bottom:14px;border-radius:6px;border:1px s
 
 <div class="section">
 <div class="section-title" onclick="toggleSection('sicaklikBolumu',this.querySelector('.arrow'))">
-<span>⌁ &nbsp; Sıcaklık Grafiği (°C)</span><span class="arrow" id="arrow_sicaklik">▼</span>
+<span>🌡️ &nbsp; Sıcaklık Grafiği (°C)</span><span class="arrow" id="arrow_sicaklik">▼</span>
 </div>
 <div id="sicaklikBolumu" class="section-content">
 <div class="chart-box">
@@ -113,7 +113,7 @@ style="padding:12px;width:100%;margin-bottom:14px;border-radius:6px;border:1px s
 
 <div class="section">
 <div class="section-title" onclick="toggleSection('nemBolumu',this.querySelector('.arrow'))">
-<span>∿ &nbsp; Nem Grafiği (% RH)</span><span class="arrow" id="arrow_nem">▼</span>
+<span>💦 &nbsp; Nem Grafiği (% RH)</span><span class="arrow" id="arrow_nem">▼</span>
 </div>
 <div id="nemBolumu" class="section-content">
 <div class="chart-box">
@@ -190,12 +190,30 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     ctx.fillStyle="#71849d";ctx.font="14px Segoe UI";ctx.fillText("Henüz grafik verisi yok.",20,40);return;
   }
   const pad={l:48,r:15,t:20,b:35}, pw=w-pad.l-pad.r, ph=h-pad.t-pad.b;
-  ctx.strokeStyle="#304158";ctx.lineWidth=1;
-  for(let i=0;i<=5;i++){
-    const y=pad.t+ph*i/5;
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();
-    const v=maxY-(maxY-minY)*i/5;
-    ctx.fillStyle="#71849d";ctx.font="11px Segoe UI";ctx.fillText(v.toFixed(0)+suffix,5,y+4);
+  // YERİNE YAPIŞTIRACAĞINIZ YENİ SAAT VE EKSEN MOTORU:
+ctx.strokeStyle="#304158";ctx.lineWidth=1;
+for(let i=0;i<=5;i++){
+  const y=pad.t+ph*i/5;
+  ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();
+  const v=maxY-(maxY-minY)*i/5;
+  ctx.fillStyle="#71849d";ctx.font="11px Segoe UI";ctx.fillText(v.toFixed(0)+suffix,5,y+4);
+}
+
+// Yeni Eklenen Saat Basma Alanı: Gelen her veri noktasının altına saat damgasını basar
+if (veriler.length > 0) {
+  ctx.fillStyle="#71849d"; ctx.font="10px Segoe UI"; ctx.textAlign="center";
+  // Yoğunluğu engellemek için maksimum 5 adet zaman etiketi basıyoruz
+  const adim = Math.max(1, Math.floor(veriler.length / 5));
+  veriler.forEach((p, i) => {
+    if (i % adim === 0 || i === veriler.length - 1) {
+      const x = pad.l + (veriler.length === 1 ? pw / 2 : pw * i / (veriler.length - 1));
+      const saatEtiketi = p.zaman || new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      ctx.fillText(saatEtiketi, x, h - 12);
+    }
+  });
+  ctx.textAlign="left"; // Hizalamayı eski haline getiriyoruz
+}
+
   }
   const vals=veriler.map(x=>Number(x.v)).filter(Number.isFinite);
   const lo=Math.min(minY,Math.min(...vals)), hi=Math.max(maxY,Math.max(...vals));
