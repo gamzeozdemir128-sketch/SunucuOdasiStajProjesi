@@ -145,7 +145,7 @@ const db=firebase.database();
 
 function durumSicaklik(t){
   t=Number(t);
-  if(t<15) return {text:"● Düşük Sıcaklık", cls:"low", color:"#3498db"};
+  if(t<18) return {text:"● Düşük Sıcaklık", cls:"low", color:"#3498db"};
   if(t<27) return {text:"● Normal", cls:"normal", color:"#21d89b"};
   if(t<31) return {text:"● Uyarı", cls:"warning", color:"#f1c40f"};
   if(t<36) return {text:"● Yüksek", cls:"critical", color:"#ff5c5c"};
