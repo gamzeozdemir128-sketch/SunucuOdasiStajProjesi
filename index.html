@@ -217,22 +217,23 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     return;
   }
 
-  /* Saatlere yer açıyoruz */
+  /* Saatler için alt tarafta alan bırak */
   const pad={
     l:48,
     r:15,
     t:20,
-    b:55
+    b:45
   };
 
   const pw=w-pad.l-pad.r;
   const ph=h-pad.t-pad.b;
 
-  /* YATAY ÇİZGİLER */
+  /* Yatay çizgiler */
   ctx.strokeStyle="#304158";
   ctx.lineWidth=1;
 
   for(let i=0;i<=5;i++){
+
     const y=pad.t+ph*i/5;
 
     ctx.beginPath();
@@ -245,10 +246,15 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     ctx.fillStyle="#71849d";
     ctx.font="11px Segoe UI";
     ctx.textAlign="left";
-    ctx.fillText(v.toFixed(0)+suffix,5,y+4);
+
+    ctx.fillText(
+      v.toFixed(0)+suffix,
+      5,
+      y+4
+    );
   }
 
-  /* DEĞERLER */
+  /* Değerleri al */
   const vals=veriler
     .map(x=>Number(x.v))
     .filter(Number.isFinite);
@@ -257,10 +263,11 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
   const hi=Math.max(maxY,Math.max(...vals));
   const range=(hi-lo)||1;
 
-  /* GRAFİK ÇİZGİSİ */
+  /* Grafik çizgisi */
   ctx.beginPath();
 
   veriler.forEach((p,i)=>{
+
     const x=
       pad.l+
       (veriler.length===1
@@ -270,7 +277,7 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     const y=
       pad.t+
       ph-
-      (Number(p.v)-lo)/range*ph;
+      ((Number(p.v)-lo)/range)*ph;
 
     if(i===0){
       ctx.moveTo(x,y);
@@ -283,8 +290,9 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
   ctx.lineWidth=2.5;
   ctx.stroke();
 
-  /* NOKTALAR */
+  /* Noktalar */
   veriler.forEach((p,i)=>{
+
     const x=
       pad.l+
       (veriler.length===1
@@ -294,7 +302,7 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     const y=
       pad.t+
       ph-
-      (Number(p.v)-lo)/range*ph;
+      ((Number(p.v)-lo)/range)*ph;
 
     ctx.beginPath();
     ctx.arc(x,y,3,0,Math.PI*2);
@@ -303,42 +311,38 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     ctx.fill();
   });
 
-  /* ==========================
+  /* =========================
      SAATLER
-     ========================== */
+     ========================= */
 
   ctx.fillStyle="#71849d";
   ctx.font="11px Segoe UI";
   ctx.textAlign="center";
 
-  /*
-     120 kayıt olsa bile hepsinin saatini
-     üst üste yazmıyoruz.
-     En fazla 6 saat gösteriyoruz.
-  */
-  const maxSaatSayisi=6;
+  /* En fazla 6 saat göster */
+  const adet=Math.min(6,veriler.length);
 
-  const adim=Math.max(
-    1,
-    Math.ceil(veriler.length/maxSaatSayisi)
-  );
+  for(let i=0;i<adet;i++){
 
-  veriler.forEach((p,i)=>{
+    let index;
 
-    if(
-      i%adim!==0 &&
-      i!==veriler.length-1
-    ){
-      return;
+    if(adet===1){
+      index=0;
+    }else{
+      index=Math.round(
+        i*(veriler.length-1)/(adet-1)
+      );
     }
+
+    const p=veriler[index];
 
     const x=
       pad.l+
       (veriler.length===1
         ? pw/2
-        : pw*i/(veriler.length-1));
+        : pw*index/(veriler.length-1));
 
-    let saat="-";
+    let saat="--:--";
 
     if(p.t){
 
@@ -354,20 +358,18 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
             hour12:false
           }
         );
-
       }
     }
 
     ctx.fillText(
       saat,
       x,
-      h-18
+      h-12
     );
-  });
+  }
 
   ctx.textAlign="left";
 }
-
 function gecmisOku(path,canvasId,min,max,suffix){
   db.ref(path).limitToLast(120).on("value",snap=>{
     const arr=[];
