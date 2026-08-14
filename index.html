@@ -198,37 +198,144 @@ db.ref("/SistemVerileri").on("value",s=>uygulaAnlik(s.val()));
 function cizGrafik(id, veriler, minY, maxY, suffix){
   const canvas=document.getElementById(id);
   if(!canvas)return;
+
   const dpr=window.devicePixelRatio||1;
-  const w=canvas.clientWidth||800, h=canvas.clientHeight||300;
-  canvas.width=w*dpr; canvas.height=h*dpr;
-  const ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
+  const w=canvas.clientWidth||800;
+  const h=canvas.clientHeight||300;
+
+  canvas.width=w*dpr;
+  canvas.height=h*dpr;
+
+  const ctx=canvas.getContext("2d");
+  ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,w,h);
+
   if(!veriler.length){
-    ctx.fillStyle="#71849d";ctx.font="14px Segoe UI";ctx.fillText("Henüz grafik verisi yok.",20,40);return;
+    ctx.fillStyle="#71849d";
+    ctx.font="14px Segoe UI";
+    ctx.fillText("Henüz grafik verisi yok.",20,40);
+    return;
   }
-  const pad={l:48,r:15,t:20,b:35}, pw=w-pad.l-pad.r, ph=h-pad.t-pad.b;
-  ctx.strokeStyle="#304158";ctx.lineWidth=1;
+
+  /* Alt tarafı saatlere yer açmak için biraz büyüttük */
+  const pad={l:48,r:15,t:20,b:55};
+  const pw=w-pad.l-pad.r;
+  const ph=h-pad.t-pad.b;
+
+  /* Yatay çizgiler */
+  ctx.strokeStyle="#304158";
+  ctx.lineWidth=1;
+
   for(let i=0;i<=5;i++){
     const y=pad.t+ph*i/5;
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pad.l,y);
+    ctx.lineTo(w-pad.r,y);
+    ctx.stroke();
+
     const v=maxY-(maxY-minY)*i/5;
-    ctx.fillStyle="#71849d";ctx.font="11px Segoe UI";ctx.fillText(v.toFixed(0)+suffix,5,y+4);
+
+    ctx.fillStyle="#71849d";
+    ctx.font="11px Segoe UI";
+    ctx.fillText(v.toFixed(0)+suffix,5,y+4);
   }
-  const vals=veriler.map(x=>Number(x.v)).filter(Number.isFinite);
-  const lo=Math.min(minY,Math.min(...vals)), hi=Math.max(maxY,Math.max(...vals));
+
+  const vals=veriler
+    .map(x=>Number(x.v))
+    .filter(Number.isFinite);
+
+  const lo=Math.min(minY,Math.min(...vals));
+  const hi=Math.max(maxY,Math.max(...vals));
   const range=(hi-lo)||1;
+
+  /* Grafik çizgisi */
   ctx.beginPath();
+
   veriler.forEach((p,i)=>{
-    const x=pad.l+(veriler.length===1?pw/2:pw*i/(veriler.length-1));
-    const y=pad.t+ph-(Number(p.v)-lo)/range*ph;
-    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    const x=pad.l+
+      (veriler.length===1
+        ? pw/2
+        : pw*i/(veriler.length-1));
+
+    const y=pad.t+
+      ph-
+      (Number(p.v)-lo)/range*ph;
+
+    if(i===0)
+      ctx.moveTo(x,y);
+    else
+      ctx.lineTo(x,y);
   });
-  ctx.strokeStyle="#3b8cff";ctx.lineWidth=2.5;ctx.stroke();
+
+  ctx.strokeStyle="#3b8cff";
+  ctx.lineWidth=2.5;
+  ctx.stroke();
+
+  /* Noktalar */
   veriler.forEach((p,i)=>{
-    const x=pad.l+(veriler.length===1?pw/2:pw*i/(veriler.length-1));
-    const y=pad.t+ph-(Number(p.v)-lo)/range*ph;
-    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle="#3b8cff";ctx.fill();
+    const x=pad.l+
+      (veriler.length===1
+        ? pw/2
+        : pw*i/(veriler.length-1));
+
+    const y=pad.t+
+      ph-
+      (Number(p.v)-lo)/range*ph;
+
+    ctx.beginPath();
+    ctx.arc(x,y,3,0,Math.PI*2);
+    ctx.fillStyle="#3b8cff";
+    ctx.fill();
   });
+
+  /* =========================
+     SAATLER
+     ========================= */
+
+  ctx.fillStyle="#71849d";
+  ctx.font="11px Segoe UI";
+  ctx.textAlign="center";
+
+  /*
+     Çok fazla kayıt varsa bütün saatleri
+     üst üste yazmamak için en fazla 6 saat gösteriyoruz.
+  */
+  const maxSaat=6;
+  const adim=Math.max(1,Math.ceil(veriler.length/maxSaat));
+
+  veriler.forEach((p,i)=>{
+
+    if(i % adim !== 0 && i !== veriler.length-1)
+      return;
+
+    const x=pad.l+
+      (veriler.length===1
+        ? pw/2
+        : pw*i/(veriler.length-1));
+
+    let saat="-";
+
+    if(p.t){
+      const tarih=new Date(Number(p.t));
+
+      if(!isNaN(tarih.getTime())){
+        saat=tarih.toLocaleTimeString("tr-TR",{
+          hour:"2-digit",
+          minute:"2-digit",
+          hour12:false
+        });
+      }
+    }
+
+    ctx.fillText(
+      saat,
+      x,
+      h-18
+    );
+  });
+
+  ctx.textAlign="left";
 }
 
 function gecmisOku(path,canvasId,min,max,suffix){
