@@ -207,7 +207,7 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
   canvas.height=h*dpr;
 
   const ctx=canvas.getContext("2d");
-  ctx.scale(dpr,dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
 
   if(!veriler.length){
@@ -217,12 +217,18 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     return;
   }
 
-  /* Alt tarafı saatlere yer açmak için biraz büyüttük */
-  const pad={l:48,r:15,t:20,b:55};
+  /* Saatlere yer açıyoruz */
+  const pad={
+    l:48,
+    r:15,
+    t:20,
+    b:55
+  };
+
   const pw=w-pad.l-pad.r;
   const ph=h-pad.t-pad.b;
 
-  /* Yatay çizgiler */
+  /* YATAY ÇİZGİLER */
   ctx.strokeStyle="#304158";
   ctx.lineWidth=1;
 
@@ -238,9 +244,11 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
 
     ctx.fillStyle="#71849d";
     ctx.font="11px Segoe UI";
+    ctx.textAlign="left";
     ctx.fillText(v.toFixed(0)+suffix,5,y+4);
   }
 
+  /* DEĞERLER */
   const vals=veriler
     .map(x=>Number(x.v))
     .filter(Number.isFinite);
@@ -249,67 +257,83 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
   const hi=Math.max(maxY,Math.max(...vals));
   const range=(hi-lo)||1;
 
-  /* Grafik çizgisi */
+  /* GRAFİK ÇİZGİSİ */
   ctx.beginPath();
 
   veriler.forEach((p,i)=>{
-    const x=pad.l+
+    const x=
+      pad.l+
       (veriler.length===1
         ? pw/2
         : pw*i/(veriler.length-1));
 
-    const y=pad.t+
+    const y=
+      pad.t+
       ph-
       (Number(p.v)-lo)/range*ph;
 
-    if(i===0)
+    if(i===0){
       ctx.moveTo(x,y);
-    else
+    }else{
       ctx.lineTo(x,y);
+    }
   });
 
   ctx.strokeStyle="#3b8cff";
   ctx.lineWidth=2.5;
   ctx.stroke();
 
-  /* Noktalar */
+  /* NOKTALAR */
   veriler.forEach((p,i)=>{
-    const x=pad.l+
+    const x=
+      pad.l+
       (veriler.length===1
         ? pw/2
         : pw*i/(veriler.length-1));
 
-    const y=pad.t+
+    const y=
+      pad.t+
       ph-
       (Number(p.v)-lo)/range*ph;
 
     ctx.beginPath();
     ctx.arc(x,y,3,0,Math.PI*2);
+
     ctx.fillStyle="#3b8cff";
     ctx.fill();
   });
 
-  /* =========================
+  /* ==========================
      SAATLER
-     ========================= */
+     ========================== */
 
   ctx.fillStyle="#71849d";
   ctx.font="11px Segoe UI";
   ctx.textAlign="center";
 
   /*
-     Çok fazla kayıt varsa bütün saatleri
-     üst üste yazmamak için en fazla 6 saat gösteriyoruz.
+     120 kayıt olsa bile hepsinin saatini
+     üst üste yazmıyoruz.
+     En fazla 6 saat gösteriyoruz.
   */
-  const maxSaat=6;
-  const adim=Math.max(1,Math.ceil(veriler.length/maxSaat));
+  const maxSaatSayisi=6;
+
+  const adim=Math.max(
+    1,
+    Math.ceil(veriler.length/maxSaatSayisi)
+  );
 
   veriler.forEach((p,i)=>{
 
-    if(i % adim !== 0 && i !== veriler.length-1)
+    if(
+      i%adim!==0 &&
+      i!==veriler.length-1
+    ){
       return;
+    }
 
-    const x=pad.l+
+    const x=
+      pad.l+
       (veriler.length===1
         ? pw/2
         : pw*i/(veriler.length-1));
@@ -317,14 +341,20 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     let saat="-";
 
     if(p.t){
+
       const tarih=new Date(Number(p.t));
 
       if(!isNaN(tarih.getTime())){
-        saat=tarih.toLocaleTimeString("tr-TR",{
-          hour:"2-digit",
-          minute:"2-digit",
-          hour12:false
-        });
+
+        saat=tarih.toLocaleTimeString(
+          "tr-TR",
+          {
+            hour:"2-digit",
+            minute:"2-digit",
+            hour12:false
+          }
+        );
+
       }
     }
 
