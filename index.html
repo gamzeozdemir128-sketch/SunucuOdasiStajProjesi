@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ServerGuard Akıllı İstasyon Kontrol Paneli</title>
+<title>Sunucu Odası Akıllı Takip ve Soğutma Sistemi</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1422;color:#dce7f5;font-family:'Segoe UI',Arial,sans-serif}
@@ -106,7 +106,7 @@ button{font-family:inherit}
 </div>
 
 <div id="sifrePencerem" class="modal">
-<h3 style="margin-top:0">Yeni Aktif Şifre</h3>
+<h3 style="margin-top:0">Yeni Şifre</h3>
 <p style="font-size:12px;color:#9fb0c8"></p>
 <input type="password" id="yeniSifreMetni" inputmode="numeric" pattern="[0-9]*" placeholder="4 Haneli Şifre" maxlength="4"
 style="padding:11px;width:100%;margin-bottom:12px;border-radius:5px;border:1px solid #31435d;background:#101b2d;color:#fff;text-align:center">
@@ -115,49 +115,44 @@ style="padding:11px;width:100%;margin-bottom:12px;border-radius:5px;border:1px s
 </div>
 
 <div class="section">
-  <!-- 1. Başlık Alanı -->
-  <div class="section-title" onclick="toggleSection('sicaklikBolumu',this.querySelector('.arrow'))">
-    <span>⌁ &nbsp; Sıcaklık Grafiği (°C)</span><span class="arrow" id="arrow_sicaklik">▼</span>
-  </div>
+<div class="section-title" onclick="toggleSection('sicaklikBolumu',this.querySelector('.arrow'))">
+<span>⌁ &nbsp; Sıcaklık Grafiği (°C)</span><span class="arrow" id="arrow_sicaklik">▼</span>
+</div>
   
-  <!-- 2. İçerik Alanı -->
-  <div id="sicaklikBolumu" class="section-content">
-    <div class="chart-box">
-      <!-- Grafik Başlığı ayrı bir kutu olarak düzeltildi ve kapatıldı -->
-      <div class="chart-header">
-        <div class="chart-title">Sıcaklık Geçmişi</div>
-      </div>
-      <!-- Grafik Tuvali (Canvas) yarım etiketlerden kurtarıldı ve kendi kutusuna alındı -->
-      <div class="chart-container" style="position: relative; width: 100%;">
-        <canvas id="sicaklikGrafik" style="height:220px"></canvas>
-        <div id="sicaklikSaatler" class="chart-times"></div>
-      </div>
-    </div>
-  </div> <!-- section-content kapatması -->
-</div> <!-- section kapatması -->
+<div id="sicaklikBolumu" class="section-content">
+<div class="chart-box">
+<div class="chart-header">
+<div class="chart-title">Sıcaklık Geçmişi</div>
+</div>
+  
+<div class="chart-container" style="position: relative; width: 100%;">
+<canvas id="sicaklikGrafik" style="height:220px"></canvas>
+<div id="sicaklikSaatler" class="chart-times"></div>
+</div>
+</div>
+</div> 
+</div> 
 
 
 <div class="section">
-  <!-- 1. Başlık Alanı -->
-  <div class="section-title" onclick="toggleSection('nemBolumu',this.querySelector('.arrow'))">
-    <span>∿ &nbsp; Nem Grafiği (% RH)</span><span class="arrow" id="arrow_nem">▼</span>
-  </div>
+<div class="section-title" onclick="toggleSection('nemBolumu',this.querySelector('.arrow'))">
+<span>∿ &nbsp; Nem Grafiği (% RH)</span><span class="arrow" id="arrow_nem">▼</span>
+</div>
   
-  <!-- 2. İçerik Alanı -->
-  <div id="nemBolumu" class="section-content">
-    <div class="chart-box">
-      <!-- Grafik Başlığı ayrı bir kutu olarak kapatıldı -->
-      <div class="chart-header">
-        <div class="chart-title">Nem Geçmişi</div>
-      </div>
-      <!-- Grafik Tuvali (Canvas) başlığın dışına, kendi kutusuna alındı -->
-      <div class="chart-container" style="position: relative; width: 100%;">
-        <canvas id="nemGrafik" style="height:220px"></canvas>
-        <div id="nemSaatler" class="chart-times"></div>
-      </div>
-    </div>
-  </div> <!-- section-content kapatması -->
-</div> <!-- section kapatması -->
+
+<div id="nemBolumu" class="section-content">
+<div class="chart-box">
+<div class="chart-header">
+<div class="chart-title">Nem Geçmişi</div>
+</div>
+     
+<div class="chart-container" style="position: relative; width: 100%;">
+<canvas id="nemGrafik" style="height:220px"></canvas>
+<div id="nemSaatler" class="chart-times"></div>
+</div>
+</div>
+</div> 
+</div> 
 
 
 <div class="section">
@@ -182,7 +177,7 @@ const db=firebase.database();
 
 function durumSicaklik(t){
   t=Number(t);
-  if(t<15) return {text:"● Düşük Sıcaklık", cls:"low", color:"#3498db"};
+  if(t<18) return {text:"● Düşük Sıcaklık", cls:"low", color:"#3498db"};
   if(t<27) return {text:"● Normal", cls:"normal", color:"#21d89b"};
   if(t<31) return {text:"● Uyarı", cls:"warning", color:"#f1c40f"};
   if(t<36) return {text:"● Yüksek", cls:"critical", color:"#ff5c5c"};
@@ -230,8 +225,7 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
 
-  /* Saatler artık canvas'ın içinde değil,
-     canvas'ın altında ayrı HTML alanında gösteriliyor. */
+
   const saatKutusu=document.getElementById(
     id==="sicaklikGrafik" ? "sicaklikSaatler" : "nemSaatler"
   );
@@ -278,7 +272,7 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
   const hi=Math.max(maxY,Math.max(...vals));
   const range=(hi-lo)||1;
 
-  /* Grafik çizgisi */
+  
   ctx.beginPath();
 
   veriler.forEach((p,i)=>{
@@ -299,7 +293,7 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
   ctx.lineWidth=2.5;
   ctx.stroke();
 
-  /* Noktalar */
+ 
   veriler.forEach((p,i)=>{
     const x=pad.l+
       (veriler.length===1
@@ -316,20 +310,12 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     ctx.fill();
   });
 
-  /* =========================
-     SAAT + SANİYE
-     ========================= */
+
 
   if(saatKutusu){
 
     saatKutusu.innerHTML="";
 
-    /*
-       Daha sık zaman etiketi:
-       En fazla 12 zaman noktası gösterilir.
-       Timestamp Firebase'den geldiği için
-       saniyeler de gerçek kayıttan alınır.
-    */
     const maxSaat=12;
     const adet=Math.min(maxSaat,veriler.length);
 
@@ -391,24 +377,13 @@ function gecmisOku(path,canvasId,min,max,suffix){
 gecmisOku("/SicaklikGecmisi","sicaklikGrafik",10,45,"°C");
 gecmisOku("/NemGecmisi","nemGrafik",20,80,"%");
 
-/* Olay Kayıtları: her zaman kayan son 30 gün */
+
 function olayKayitlariniYukle(){
 
-  /* 13 Ağustos 2026'dan önceki kayıtlar hiçbir zaman gösterilmez. */
   const baslangicSiniri = new Date("2026-08-13T00:00:00").getTime();
-
-  /* Bunun üzerindeki sınır ise her zaman kayan son 30 gündür. */
+ 
   const son30Gun = Date.now() - (30 * 24 * 60 * 60 * 1000);
-
-  /*
-     13 Ağustos 2026 ile kayan 30 günlük pencerenin başlangıcından
-     hangisi daha yeniyse onu kullan.
-
-     Böylece:
-     - 13 Ağustos'tan önce: gösterilmez
-     - 13 Ağustos'tan sonraki ilk 30 gün: 13 Ağustos'tan bugüne kadar
-     - Sonrasında: sürekli kayan son 30 gün
-  */
+  
   const filtreBaslangici = Math.max(baslangicSiniri, son30Gun);
 
   db.ref("/OlayKayitlari")
@@ -464,8 +439,7 @@ function olayKayitlariniYukle(){
     });
 }
 
-/* Sayfa açıldığında ve her saat filtreyi yeniden hesapla.
-   Böylece pencere zaman ilerledikçe otomatik olarak kayar. */
+
 olayKayitlariniYukle();
 
 setInterval(()=>{
@@ -477,7 +451,7 @@ function sifreGuncelle(){
   const yeni=input.value.trim();
   if(!/^\d{4}$/.test(yeni)){alert("Lütfen 4 haneli sayısal şifre girin.");return;}
   db.ref("/serverguard/aktif_sifre").set(yeni).then(()=>{
-    alert("Yeni aktif şifre Firebase'e kaydedildi.");
+    alert("Şifre değiştirildi.");
     input.value="";closeModal();
   }).catch(e=>alert("Şifre kaydedilemedi: "+e.message));
 }
