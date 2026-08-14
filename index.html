@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sunucu Odası Akıllı Takip ve Soğutma Sistemi</title>
+<title>ServerGuard Akıllı İstasyon Kontrol Paneli</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1422;color:#dce7f5;font-family:'Segoe UI',Arial,sans-serif}
@@ -33,6 +33,24 @@ body{margin:0;background:#0b1422;color:#dce7f5;font-family:'Segoe UI',Arial,sans
 .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .chart-title{font-size:14px;font-weight:700}.live{font-size:11px;color:#21d89b}
 canvas{width:100%;height:300px;display:block}
+.chart-times{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  min-height:24px;
+  margin-top:4px;
+  padding:0 8px 0 48px;
+  color:#71849d;
+  font-size:11px;
+  font-family:'Segoe UI',Arial,sans-serif;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.chart-times span{
+  flex:1;
+  text-align:center;
+}
+
 .table{width:100%;border-collapse:collapse;font-size:13px}
 .table th{text-align:left;background:#0e1728;color:#8fa3bd;padding:13px}
 .table td{padding:13px;border-bottom:1px solid #304158;color:#d5dfeb}
@@ -88,7 +106,7 @@ button{font-family:inherit}
 </div>
 
 <div id="sifrePencerem" class="modal">
-<h3 style="margin-top:0">Yeni Şifre</h3>
+<h3 style="margin-top:0">Yeni Aktif Şifre</h3>
 <p style="font-size:12px;color:#9fb0c8"></p>
 <input type="password" id="yeniSifreMetni" inputmode="numeric" pattern="[0-9]*" placeholder="4 Haneli Şifre" maxlength="4"
 style="padding:11px;width:100%;margin-bottom:12px;border-radius:5px;border:1px solid #31435d;background:#101b2d;color:#fff;text-align:center">
@@ -110,8 +128,9 @@ style="padding:11px;width:100%;margin-bottom:12px;border-radius:5px;border:1px s
         <div class="chart-title">Sıcaklık Geçmişi</div>
       </div>
       <!-- Grafik Tuvali (Canvas) yarım etiketlerden kurtarıldı ve kendi kutusuna alındı -->
-      <div class="chart-container" style="position: relative; height: 220px; width: 100%;">
-        <canvas id="sicaklikGrafik"></canvas>
+      <div class="chart-container" style="position: relative; width: 100%;">
+        <canvas id="sicaklikGrafik" style="height:220px"></canvas>
+        <div id="sicaklikSaatler" class="chart-times"></div>
       </div>
     </div>
   </div> <!-- section-content kapatması -->
@@ -132,8 +151,9 @@ style="padding:11px;width:100%;margin-bottom:12px;border-radius:5px;border:1px s
         <div class="chart-title">Nem Geçmişi</div>
       </div>
       <!-- Grafik Tuvali (Canvas) başlığın dışına, kendi kutusuna alındı -->
-      <div class="chart-container" style="position: relative; height: 220px; width: 100%;">
-        <canvas id="nemGrafik"></canvas>
+      <div class="chart-container" style="position: relative; width: 100%;">
+        <canvas id="nemGrafik" style="height:220px"></canvas>
+        <div id="nemSaatler" class="chart-times"></div>
       </div>
     </div>
   </div> <!-- section-content kapatması -->
@@ -210,6 +230,16 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
 
+  /* Saatler artık canvas'ın içinde değil,
+     canvas'ın altında ayrı HTML alanında gösteriliyor. */
+  const saatKutusu=document.getElementById(
+    id==="sicaklikGrafik" ? "sicaklikSaatler" : "nemSaatler"
+  );
+
+  if(saatKutusu){
+    saatKutusu.innerHTML="";
+  }
+
   if(!veriler.length){
     ctx.fillStyle="#71849d";
     ctx.font="14px Segoe UI";
@@ -217,23 +247,14 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     return;
   }
 
-  /* Saatler için alt tarafta alan bırak */
-  const pad={
-    l:48,
-    r:15,
-    t:20,
-    b:45
-  };
-
+  const pad={l:48,r:15,t:20,b:35};
   const pw=w-pad.l-pad.r;
   const ph=h-pad.t-pad.b;
 
-  /* Yatay çizgiler */
   ctx.strokeStyle="#304158";
   ctx.lineWidth=1;
 
   for(let i=0;i<=5;i++){
-
     const y=pad.t+ph*i/5;
 
     ctx.beginPath();
@@ -246,15 +267,9 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
     ctx.fillStyle="#71849d";
     ctx.font="11px Segoe UI";
     ctx.textAlign="left";
-
-    ctx.fillText(
-      v.toFixed(0)+suffix,
-      5,
-      y+4
-    );
+    ctx.fillText(v.toFixed(0)+suffix,5,y+4);
   }
 
-  /* Değerleri al */
   const vals=veriler
     .map(x=>Number(x.v))
     .filter(Number.isFinite);
@@ -267,23 +282,17 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
   ctx.beginPath();
 
   veriler.forEach((p,i)=>{
-
-    const x=
-      pad.l+
+    const x=pad.l+
       (veriler.length===1
         ? pw/2
         : pw*i/(veriler.length-1));
 
-    const y=
-      pad.t+
+    const y=pad.t+
       ph-
-      ((Number(p.v)-lo)/range)*ph;
+      (Number(p.v)-lo)/range*ph;
 
-    if(i===0){
-      ctx.moveTo(x,y);
-    }else{
-      ctx.lineTo(x,y);
-    }
+    if(i===0)ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
   });
 
   ctx.strokeStyle="#3b8cff";
@@ -292,80 +301,78 @@ function cizGrafik(id, veriler, minY, maxY, suffix){
 
   /* Noktalar */
   veriler.forEach((p,i)=>{
-
-    const x=
-      pad.l+
+    const x=pad.l+
       (veriler.length===1
         ? pw/2
         : pw*i/(veriler.length-1));
 
-    const y=
-      pad.t+
+    const y=pad.t+
       ph-
-      ((Number(p.v)-lo)/range)*ph;
+      (Number(p.v)-lo)/range*ph;
 
     ctx.beginPath();
     ctx.arc(x,y,3,0,Math.PI*2);
-
     ctx.fillStyle="#3b8cff";
     ctx.fill();
   });
 
   /* =========================
-     SAATLER
+     SAAT + SANİYE
      ========================= */
 
-  ctx.fillStyle="#71849d";
-  ctx.font="11px Segoe UI";
-  ctx.textAlign="center";
+  if(saatKutusu){
 
-  /* En fazla 6 saat göster */
-  const adet=Math.min(6,veriler.length);
+    saatKutusu.innerHTML="";
 
-  for(let i=0;i<adet;i++){
+    /*
+       Daha sık zaman etiketi:
+       En fazla 12 zaman noktası gösterilir.
+       Timestamp Firebase'den geldiği için
+       saniyeler de gerçek kayıttan alınır.
+    */
+    const maxSaat=12;
+    const adet=Math.min(maxSaat,veriler.length);
 
-    let index;
+    for(let i=0;i<adet;i++){
 
-    if(adet===1){
-      index=0;
-    }else{
-      index=Math.round(
-        i*(veriler.length-1)/(adet-1)
-      );
-    }
+      let index;
 
-    const p=veriler[index];
-
-    const x=
-      pad.l+
-      (veriler.length===1
-        ? pw/2
-        : pw*index/(veriler.length-1));
-
-    let saat="--:--";
-
-    if(p.t){
-
-      const tarih=new Date(Number(p.t));
-
-      if(!isNaN(tarih.getTime())){
-
-        saat=tarih.toLocaleTimeString(
-          "tr-TR",
-          {
-            hour:"2-digit",
-            minute:"2-digit",
-            hour12:false
-          }
+      if(adet===1){
+        index=0;
+      }else{
+        index=Math.round(
+          i*(veriler.length-1)/(adet-1)
         );
       }
-    }
 
-    ctx.fillText(
-      saat,
-      x,
-      h-12
-    );
+      const p=veriler[index];
+
+      let saat="--:--:--";
+
+      const timestamp=Number(p.t);
+
+      if(Number.isFinite(timestamp) && timestamp>0){
+
+        const tarih=new Date(timestamp);
+
+        if(!isNaN(tarih.getTime())){
+
+          saat=tarih.toLocaleTimeString(
+            "tr-TR",
+            {
+              hour:"2-digit",
+              minute:"2-digit",
+              second:"2-digit",
+              hour12:false
+            }
+          );
+        }
+      }
+
+      const span=document.createElement("span");
+      span.textContent=saat;
+      saatKutusu.appendChild(span);
+    }
   }
 
   ctx.textAlign="left";
@@ -384,33 +391,93 @@ function gecmisOku(path,canvasId,min,max,suffix){
 gecmisOku("/SicaklikGecmisi","sicaklikGrafik",10,45,"°C");
 gecmisOku("/NemGecmisi","nemGrafik",20,80,"%");
 
-db.ref("/OlayKayitlari").limitToLast(100).on("value",snap=>{
-  const tbody=document.getElementById("olayListesi");
-  tbody.innerHTML="";
-  const logs=[];
-  snap.forEach(ch=>{const l=ch.val();if(l)logs.unshift(l);});
-  if(!logs.length){
-    tbody.innerHTML="<tr><td colspan='4' style='text-align:center;color:#71849d'>Henüz olay kaydı bulunmuyor.</td></tr>";
-    return;
-  }
-  logs.forEach(l=>{
-    const tr=document.createElement("tr");
-    const ts=l.timestamp?new Date(Number(l.timestamp)).toLocaleString("tr-TR"):(l.zaman||"-");
-    const level=l.seviye||"Bilgi";
-    const critical=["Kritik","Yüksek","Yetkisiz"].includes(level);
-    const warning=["Uyarı"].includes(level);
-    const style=critical?"background:#5a2020;color:#ff7373;":warning?"background:#5a4b18;color:#f1c40f;":"background:#18345d;color:#5ea0ff;";
-    tr.innerHTML="<td>"+ts+"</td><td><span class='badge' style='"+style+"'>"+level+"</span></td><td>"+(l.kaynak||"-")+"</td><td>"+(l.aciklama||l.mesaj||"-")+"</td>";
-    tbody.appendChild(tr);
-  });
-});
+/* Olay Kayıtları: her zaman kayan son 30 gün */
+function olayKayitlariniYukle(){
+
+  /* 13 Ağustos 2026'dan önceki kayıtlar hiçbir zaman gösterilmez. */
+  const baslangicSiniri = new Date("2026-08-13T00:00:00").getTime();
+
+  /* Bunun üzerindeki sınır ise her zaman kayan son 30 gündür. */
+  const son30Gun = Date.now() - (30 * 24 * 60 * 60 * 1000);
+
+  /*
+     13 Ağustos 2026 ile kayan 30 günlük pencerenin başlangıcından
+     hangisi daha yeniyse onu kullan.
+
+     Böylece:
+     - 13 Ağustos'tan önce: gösterilmez
+     - 13 Ağustos'tan sonraki ilk 30 gün: 13 Ağustos'tan bugüne kadar
+     - Sonrasında: sürekli kayan son 30 gün
+  */
+  const filtreBaslangici = Math.max(baslangicSiniri, son30Gun);
+
+  db.ref("/OlayKayitlari")
+    .orderByChild("timestamp")
+    .startAt(filtreBaslangici)
+    .on("value",snap=>{
+
+      const tbody=document.getElementById("olayListesi");
+      tbody.innerHTML="";
+
+      const logs=[];
+
+      snap.forEach(ch=>{
+        const l=ch.val();
+
+        if(l && Number(l.timestamp) >= filtreBaslangici){
+          logs.unshift(l);
+        }
+      });
+
+      if(!logs.length){
+        tbody.innerHTML="<tr><td colspan='4' style='text-align:center;color:#71849d'>13 Ağustos 2026'dan itibaren olay kaydı bulunmuyor.</td></tr>";
+        return;
+      }
+
+      logs.forEach(l=>{
+
+        const tr=document.createElement("tr");
+
+        const ts=l.timestamp
+          ? new Date(Number(l.timestamp)).toLocaleString("tr-TR")
+          : (l.zaman||"-");
+
+        const level=l.seviye||"Bilgi";
+
+        const critical=["Kritik","Yüksek","Yetkisiz"].includes(level);
+        const warning=["Uyarı"].includes(level);
+
+        const style=critical
+          ?"background:#5a2020;color:#ff7373;"
+          :warning
+            ?"background:#5a4b18;color:#f1c40f;"
+            :"background:#18345d;color:#5ea0ff;";
+
+        tr.innerHTML=
+          "<td>"+ts+"</td>"+
+          "<td><span class='badge' style='"+style+"'>"+level+"</span></td>"+
+          "<td>"+(l.kaynak||"-")+"</td>"+
+          "<td>"+(l.aciklama||l.mesaj||"-")+"</td>";
+
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+/* Sayfa açıldığında ve her saat filtreyi yeniden hesapla.
+   Böylece pencere zaman ilerledikçe otomatik olarak kayar. */
+olayKayitlariniYukle();
+
+setInterval(()=>{
+  olayKayitlariniYukle();
+}, 60 * 60 * 1000);
 
 function sifreGuncelle(){
   const input=document.getElementById("yeniSifreMetni");
   const yeni=input.value.trim();
   if(!/^\d{4}$/.test(yeni)){alert("Lütfen 4 haneli sayısal şifre girin.");return;}
   db.ref("/serverguard/aktif_sifre").set(yeni).then(()=>{
-    alert("Şifre değiştirildi.");
+    alert("Yeni aktif şifre Firebase'e kaydedildi.");
     input.value="";closeModal();
   }).catch(e=>alert("Şifre kaydedilemedi: "+e.message));
 }
@@ -440,4 +507,5 @@ function closeModal(){document.getElementById("sifrePencerem").style.display="no
 restoreSections();
 window.addEventListener("resize",()=>{});
 </script>
-
+</body>
+</html>
