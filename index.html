@@ -61,6 +61,7 @@ button{font-family:inherit}
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -179,6 +180,15 @@ button{font-family:inherit}
         <tbody id="olayListesi"></tbody>
       </table>
     </div>
+  </div>
+
+  <div style="margin:25px 0 5px;text-align:center">
+    <label for="excelBaslangicTarihi" style="font-weight:bold;margin-right:8px">Başlangıç tarihi:</label>
+    <input type="date" id="excelBaslangicTarihi" value="2026-08-13" style="padding:9px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px">
+    <br>
+    <button onclick="sistemVerileriniIndir()" style="background:#3b8cff;color:#fff;padding:12px 24px;font-weight:bold;cursor:pointer;border:none;border-radius:6px;min-width:280px">
+      📥 Sistem Verilerini İndir
+    </button>
   </div>
 </div>
 
@@ -419,8 +429,7 @@ button{font-family:inherit}
 
   function olayKayitlariniYukle(){
     const baslangicSiniri = new Date("2026-08-13T00:00:00").getTime();
-    const son30Gun = Date.now() - (30 * 24 * 60 * 60 * 1000);
-    const filtreBaslangici = Math.max(baslangicSiniri, son30Gun);
+    const filtreBaslangici = baslangicSiniri;
 
     db.ref("/OlayKayitlari").orderByChild("timestamp").startAt(filtreBaslangici).on("value", snap=>{
       const tbody=document.getElementById("olayListesi");
@@ -500,6 +509,74 @@ button{font-family:inherit}
   function closeModal(){
     document.getElementById("sifrePencerem").style.display="none";
     document.getElementById("modalBackdrop").style.display="none";
+  }
+
+  function sistemVerileriniIndir(){
+    const secilenTarih = document.getElementById("excelBaslangicTarihi").value;
+    if(!secilenTarih){
+      alert("Lütfen başlangıç tarihi seçin.");
+      return;
+    }
+    const filtreBaslangici = new Date(secilenTarih + "T00:00:00").getTime();
+
+    db.ref("/OlayKayitlari").orderByChild("timestamp").once("value")
+      .then(snap => {
+        const logs = [];
+
+        snap.forEach(ch => {
+          const l = ch.val();
+
+          if(l && Number(l.timestamp) >= filtreBaslangici){
+            logs.push({
+              _timestamp: Number(l.timestamp || 0),
+              "Zaman": l.timestamp
+                ? new Date(Number(l.timestamp)).toLocaleString("tr-TR", {
+                    day:"2-digit",
+                    month:"2-digit",
+                    year:"numeric",
+                    hour:"2-digit",
+                    minute:"2-digit",
+                    second:"2-digit",
+                    hour12:false
+                  })
+                : (l.zaman || "-"),
+              "Seviye": l.seviye || "Bilgi",
+              "Kaynak": l.kaynak || "-",
+              "Açıklama": l.aciklama || l.mesaj || "-"
+            });
+          }
+        });
+
+        logs.sort((a,b) => b._timestamp - a._timestamp);
+        logs.forEach(l => delete l._timestamp);
+
+        const veri = logs.length ? logs : [{
+          "Zaman": "-",
+          "Seviye": "-",
+          "Kaynak": "-",
+          "Açıklama": "Belirtilen tarih aralığında olay kaydı bulunmuyor."
+        }];
+
+        const worksheet = XLSX.utils.json_to_sheet(veri);
+        worksheet["!cols"] = [
+          {wch:22},
+          {wch:15},
+          {wch:20},
+          {wch:65}
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Olay Kayıtları");
+
+        XLSX.writeFile(
+          workbook,
+          "sistem_olay_kayitlari_" +
+          new Date().toISOString().slice(0,10) + ".xlsx"
+        );
+      })
+      .catch(e => {
+        alert("Sistem verileri indirilemedi: " + e.message);
+      });
   }
 
   window.addEventListener("resize",()=>{});
