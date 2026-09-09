@@ -186,6 +186,9 @@ button{font-family:inherit}
     <label for="excelBaslangicTarihi" style="font-weight:bold;margin-right:8px">Başlangıç tarihi:</label>
     <input type="date" id="excelBaslangicTarihi" value="2026-08-13" style="padding:9px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px">
     <br>
+    <label for="excelBitisTarihi" style="font-weight:bold;margin-right:8px">Bitiş tarihi:</label>
+    <input type="date" id="excelBitisTarihi" value="2026-08-13" style="padding:9px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px">
+    <br>
     <button onclick="sistemVerileriniIndir()" style="background:#3b8cff;color:#fff;padding:12px 24px;font-weight:bold;cursor:pointer;border:none;border-radius:6px;min-width:280px">
       📥 Sistem Verilerini İndir
     </button>
@@ -512,12 +515,21 @@ button{font-family:inherit}
   }
 
   function sistemVerileriniIndir(){
-    const secilenTarih = document.getElementById("excelBaslangicTarihi").value;
-    if(!secilenTarih){
-      alert("Lütfen başlangıç tarihi seçin.");
+    const baslangicTarihi = document.getElementById("excelBaslangicTarihi").value;
+    const bitisTarihi = document.getElementById("excelBitisTarihi").value;
+
+    if(!baslangicTarihi || !bitisTarihi){
+      alert("Lütfen başlangıç ve bitiş tarihlerini seçin.");
       return;
     }
-    const filtreBaslangici = new Date(secilenTarih + "T00:00:00").getTime();
+
+    const filtreBaslangici = new Date(baslangicTarihi + "T00:00:00").getTime();
+    const filtreBitisi = new Date(bitisTarihi + "T23:59:59").getTime();
+
+    if(filtreBaslangici > filtreBitisi){
+      alert("Başlangıç tarihi, bitiş tarihinden sonra olamaz.");
+      return;
+    }
 
     db.ref("/OlayKayitlari").orderByChild("timestamp").once("value")
       .then(snap => {
@@ -525,12 +537,13 @@ button{font-family:inherit}
 
         snap.forEach(ch => {
           const l = ch.val();
+          const timestamp = Number(l && l.timestamp || 0);
 
-          if(l && Number(l.timestamp) >= filtreBaslangici){
+          if(l && timestamp >= filtreBaslangici && timestamp <= filtreBitisi){
             logs.push({
-              _timestamp: Number(l.timestamp || 0),
+              _timestamp: timestamp,
               "Zaman": l.timestamp
-                ? new Date(Number(l.timestamp)).toLocaleString("tr-TR", {
+                ? new Date(timestamp).toLocaleString("tr-TR", {
                     day:"2-digit",
                     month:"2-digit",
                     year:"numeric",
@@ -571,7 +584,7 @@ button{font-family:inherit}
         XLSX.writeFile(
           workbook,
           "sistem_olay_kayitlari_" +
-          new Date().toISOString().slice(0,10) + ".xlsx"
+          baslangicTarihi + "_" + bitisTarihi + ".xlsx"
         );
       })
       .catch(e => {
