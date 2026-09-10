@@ -9,7 +9,7 @@ const char* ssid = "WIFI_ADI";
 const char* password = "********";
 
 const char* FIREBASE_HOST = "sunucuodasitakipvesogutma-default-rtdb.firebaseio.com";
-const char* FIREBASE_AUTH = "UVEiRNYPMrFQbGcEXm3gDokFeNKAbWNMaHBwfg9f";
+const char* FIREBASE_AUTH = "FIREBASE_AUTH_BILGISI";
 
 #define DHTPIN 0
 #define BUZZERPIN 14
